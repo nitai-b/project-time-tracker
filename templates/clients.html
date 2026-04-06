@@ -1,44 +1,52 @@
 {% extends "base.html" %}
 {% block title %}Clients | Project Time Tracker{% endblock %}
 {% block content %}
-<section class="grid two">
-    <article class="card">
-        <h2>Create Client</h2>
-        <form method="post" action="/clients" class="stack">
-            <label>
+<section class="grid gap-6 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+    <article class="panel">
+        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Directory</p>
+        <h2 class="mt-2 text-xl font-semibold tracking-tight">Create Client</h2>
+        <form method="post" action="/clients" class="mt-6 grid gap-4">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Name
-                <input type="text" name="name" required>
+                <input type="text" name="name" required class="field">
             </label>
-            <button type="submit">Add Client</button>
+            <button type="submit" class="btn">Add Client</button>
         </form>
     </article>
 
-    <article class="card">
-        <h2>Clients</h2>
-        <table>
-            <thead>
+    <article class="panel">
+        <h2 class="text-xl font-semibold tracking-tight">Clients</h2>
+        <div class="mt-4 overflow-x-auto">
+        <table class="data-table">
+            <thead class="bg-slate-50/80 dark:bg-slate-950/40">
                 <tr>
                     <th>Name</th>
                     <th>Created</th>
                     <th></th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
                 {% for client in clients %}
-                    <tr>
+                    <tr class="transition hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
                         <td>{{ client.name }}</td>
-                        <td>{{ friendly_datetime(client.created_at) }}</td>
                         <td>
+                            <time datetime="{{ client.created_at.isoformat() }}" data-human-datetime>
+                                {{ friendly_datetime(client.created_at) }}
+                            </time>
+                        </td>
+                        <td class="space-y-2">
+                            <a href="/clients/{{ client.id }}/edit" hx-boost="false" class="inline-flex rounded-lg px-2.5 py-1.5 text-sky-700 transition hover:bg-sky-50 hover:text-sky-800 dark:text-sky-300 dark:hover:bg-sky-950/40 dark:hover:text-sky-200">Edit</a>
                             <form method="post" action="/clients/{{ client.id }}/delete">
-                                <button type="submit" class="secondary">Delete</button>
+                                <button type="submit" class="btn-secondary">Delete</button>
                             </form>
                         </td>
                     </tr>
                 {% else %}
-                    <tr><td colspan="3">No clients yet.</td></tr>
+                    <tr><td colspan="3" class="py-8 text-center text-slate-500 dark:text-slate-400">No clients yet.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </article>
 </section>
 {% endblock %}

@@ -1,7 +1,38 @@
 :root {
     font-family: Arial, sans-serif;
-    color: #1f2933;
-    background: #f5f7fa;
+    color-scheme: light;
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --surface-alt: #ffffff;
+    --text: #1f2933;
+    --muted-text: #52606d;
+    --border: #d9e2ec;
+    --input-border: #bcccdc;
+    --link: #0f5fc2;
+    --primary: #0f5fc2;
+    --primary-text: #ffffff;
+    --flash-info-bg: #d9f2e3;
+    --flash-info-text: #1a5d3b;
+    --flash-error-bg: #fde8e8;
+    --flash-error-text: #9b1c1c;
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #111827;
+    --surface: #1f2937;
+    --surface-alt: #0f172a;
+    --text: #e5e7eb;
+    --muted-text: #cbd5e1;
+    --border: #334155;
+    --input-border: #475569;
+    --link: #7dd3fc;
+    --primary: #38bdf8;
+    --primary-text: #082f49;
+    --flash-info-bg: #123a2f;
+    --flash-info-text: #c7f9dd;
+    --flash-error-bg: #4c1d1d;
+    --flash-error-text: #fecaca;
 }
 
 * {
@@ -10,11 +41,12 @@
 
 body {
     margin: 0;
-    background: #f5f7fa;
+    background: var(--bg);
+    color: var(--text);
 }
 
 a {
-    color: #0f5fc2;
+    color: var(--link);
     text-decoration: none;
 }
 
@@ -24,8 +56,8 @@ a {
     align-items: center;
     gap: 1rem;
     padding: 1rem 1.5rem;
-    background: #ffffff;
-    border-bottom: 1px solid #d9e2ec;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
 }
 
 .site-header nav {
@@ -51,8 +83,8 @@ a {
 }
 
 .card {
-    background: #ffffff;
-    border: 1px solid #d9e2ec;
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 1rem;
     margin-bottom: 1rem;
@@ -90,20 +122,22 @@ button {
     font: inherit;
     padding: 0.65rem 0.75rem;
     border-radius: 6px;
-    border: 1px solid #bcccdc;
+    border: 1px solid var(--input-border);
+    background: var(--surface-alt);
+    color: var(--text);
 }
 
 button {
     cursor: pointer;
-    background: #0f5fc2;
-    color: #ffffff;
-    border-color: #0f5fc2;
+    background: var(--primary);
+    color: var(--primary-text);
+    border-color: var(--primary);
 }
 
 button.secondary {
-    background: #ffffff;
-    color: #1f2933;
-    border-color: #bcccdc;
+    background: var(--surface-alt);
+    color: var(--text);
+    border-color: var(--input-border);
 }
 
 button:disabled {
@@ -120,7 +154,7 @@ th,
 td {
     text-align: left;
     padding: 0.75rem;
-    border-top: 1px solid #d9e2ec;
+    border-top: 1px solid var(--border);
     vertical-align: top;
 }
 
@@ -140,19 +174,23 @@ thead th {
 }
 
 .flash.info {
-    background: #d9f2e3;
-    color: #1a5d3b;
+    background: var(--flash-info-bg);
+    color: var(--flash-info-text);
 }
 
 .flash.error {
-    background: #fde8e8;
-    color: #9b1c1c;
+    background: var(--flash-error-bg);
+    color: var(--flash-error-text);
 }
 
 .actions {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+}
+
+.theme-toggle {
+    min-width: 120px;
 }
 
 @media (max-width: 720px) {

@@ -1,113 +1,140 @@
 {% extends "base.html" %}
 {% block title %}Time Entries | Project Time Tracker{% endblock %}
 {% block content %}
-<section class="card">
-    <div class="section-header">
-        <h2>Time Entries</h2>
-        <a href="/entries/export.csv">Export CSV</a>
+<section class="mb-6 panel">
+    <div class="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Records</p>
+            <h2 class="mt-2 text-xl font-semibold tracking-tight">Time Entries</h2>
+        </div>
+        <a href="/entries/export.csv" hx-boost="false" class="btn-secondary">Export CSV</a>
     </div>
-    <form method="get" action="/entries" class="filters">
-        <label>
+    <form method="get" action="/entries" class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
             Client
-            <select name="client_id">
+            <select name="client_id" class="field">
                 <option value="">All</option>
                 {% for client in clients %}
                     <option value="{{ client.id }}" {% if filters.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
                 {% endfor %}
             </select>
         </label>
-        <label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
             Project
-            <select name="project_id">
+            <select name="project_id" class="field">
                 <option value="">All</option>
                 {% for project in projects %}
                     <option value="{{ project.id }}" {% if filters.project_id == project.id %}selected{% endif %}>{{ project.name }}</option>
                 {% endfor %}
             </select>
         </label>
-        <label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
             Task
-            <select name="task_id">
+            <select name="task_id" class="field">
                 <option value="">All</option>
                 {% for task in tasks %}
                     <option value="{{ task.id }}" {% if filters.task_id == task.id %}selected{% endif %}>{{ task.name }}</option>
                 {% endfor %}
             </select>
         </label>
-        <label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
             Date
-            <input type="date" name="entry_date" value="{{ filters.entry_date }}">
+            <input type="date" name="entry_date" value="{{ filters.entry_date }}" class="field">
         </label>
-        <button type="submit">Filter</button>
+        <div class="flex items-end">
+            <button type="submit" class="btn w-full xl:w-auto">Filter</button>
+        </div>
     </form>
 </section>
 
-<section class="grid two">
-    <article class="card">
-        <h2>Create Manual Entry</h2>
-        <form method="post" action="/entries/manual" class="stack entry-form" data-entry-form>
-            <label>
-                Client
-                <select data-client-select>
+<section class="mb-6 grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]">
+    <article class="panel">
+        <h2 class="text-xl font-semibold tracking-tight">Create Manual Entry</h2>
+        <form method="post" action="/entries/manual" class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3 entry-form" data-entry-form>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Existing Client
+                <select name="client_id" data-client-select class="field">
                     <option value="">Select client</option>
                     {% for client in clients %}
                         <option value="{{ client.id }}">{{ client.name }}</option>
                     {% endfor %}
                 </select>
             </label>
-            <label>
-                Project
-                <select name="project_id" required data-project-select>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                New Client
+                <input type="text" name="new_client_name" placeholder="Create client if missing" class="field">
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Existing Project
+                <select name="project_id" data-project-select class="field">
                     <option value="">Select project</option>
                     {% for project in projects %}
                         <option value="{{ project.id }}" data-client-id="{{ project.client_id }}">{{ project.name }}</option>
                     {% endfor %}
                 </select>
             </label>
-            <label>
-                Task
-                <select name="task_id" required data-task-select>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                New Project
+                <input type="text" name="new_project_name" placeholder="Create project if missing" class="field">
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Existing Task
+                <select name="task_id" data-task-select class="field">
                     <option value="">Select task</option>
                     {% for task in tasks %}
                         <option value="{{ task.id }}" data-project-id="{{ task.project_id }}">{{ task.name }}</option>
                     {% endfor %}
                 </select>
             </label>
-            <label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                New Task
+                <input type="text" name="new_task_name" placeholder="Create task if missing" class="field">
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Start Time
-                <input type="datetime-local" step="1" name="start_time" value="{{ form_defaults.start_time }}" required>
+                <input type="datetime-local" step="1" name="start_time" value="{{ form_defaults.start_time }}" required class="field">
             </label>
-            <label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 End Time
-                <input type="datetime-local" step="1" name="end_time" value="{{ form_defaults.end_time }}" required>
+                <input type="datetime-local" step="1" name="end_time" value="{{ form_defaults.end_time }}" required class="field">
             </label>
-            <label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 md:col-span-2 xl:col-span-3">
                 Notes
-                <textarea name="notes" rows="3" placeholder="Optional notes"></textarea>
+                <textarea name="notes" rows="3" placeholder="Optional notes" class="field"></textarea>
             </label>
-            <button type="submit">Create Entry</button>
+            <div class="md:col-span-2 xl:col-span-3">
+                <button type="submit" class="btn">Create Entry</button>
+            </div>
         </form>
     </article>
 
-    <article class="card">
-        <h2>Current Timer</h2>
+    <article class="panel">
+        <h2 class="text-xl font-semibold tracking-tight">Current Timer</h2>
         {% if active_entry %}
-            <p><strong>{{ active_entry.project.client.name }}</strong> / {{ active_entry.project.name }}</p>
-            <p>{{ active_entry.task.name }}</p>
-            <p>Started {{ friendly_datetime(active_entry.start_time) }}</p>
-            <form method="post" action="/entries/{{ active_entry.id }}/stop">
+            <div class="mt-4 space-y-2 text-sm">
+                <p class="font-medium text-slate-950 dark:text-white">{{ active_entry.project.client.name }} / {{ active_entry.project.name }}</p>
+                <p class="text-slate-700 dark:text-slate-300">{{ active_entry.task.name }}</p>
+                <p class="text-slate-500 dark:text-slate-400">
+                    Started
+                    <time datetime="{{ active_entry.start_time.isoformat() }}" data-human-datetime>
+                        {{ friendly_datetime(active_entry.start_time) }}
+                    </time>
+                </p>
+            </div>
+            <form method="post" action="/entries/{{ active_entry.id }}/stop" class="mt-5">
                 <input type="hidden" name="next_path" value="/entries">
-                <button type="submit">Stop Timer</button>
+                <button type="submit" class="btn">Stop Timer</button>
             </form>
         {% else %}
-            <p>No active timer.</p>
+            <p class="mt-4 text-sm text-slate-600 dark:text-slate-400">No active timer.</p>
         {% endif %}
     </article>
 </section>
 
-<section class="card">
-    <table>
-        <thead>
+<section class="panel">
+    <div class="overflow-x-auto">
+    <table class="data-table">
+        <thead class="bg-slate-50/80 dark:bg-slate-950/40">
             <tr>
                 <th>Client</th>
                 <th>Project</th>
@@ -119,30 +146,43 @@
                 <th></th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
             {% for entry in entries %}
-                <tr>
+                <tr class="transition hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
                     <td>{{ entry.project.client.name }}</td>
                     <td>{{ entry.project.name }}</td>
                     <td>{{ entry.task.name }}</td>
-                    <td>{{ friendly_datetime(entry.start_time) }}</td>
-                    <td>{{ friendly_datetime(entry.end_time) }}</td>
+                    <td>
+                        <time datetime="{{ entry.start_time.isoformat() }}" data-human-datetime>
+                            {{ friendly_datetime(entry.start_time) }}
+                        </time>
+                    </td>
+                    <td>
+                        {% if entry.end_time %}
+                            <time datetime="{{ entry.end_time.isoformat() }}" data-human-datetime>
+                                {{ friendly_datetime(entry.end_time) }}
+                            </time>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                     <td>{{ format_duration(entry.duration_seconds) }}</td>
                     <td>{{ entry.notes or "" }}</td>
-                    <td class="actions">
-                        <a href="/entries/{{ entry.id }}/edit">Edit</a>
+                    <td class="space-y-2">
+                        <a href="/entries/{{ entry.id }}/edit" hx-boost="false" class="inline-flex rounded-lg px-2.5 py-1.5 text-sky-700 transition hover:bg-sky-50 hover:text-sky-800 dark:text-sky-300 dark:hover:bg-sky-950/40 dark:hover:text-sky-200">Edit</a>
                         {% if not entry.end_time %}
                             <form method="post" action="/entries/{{ entry.id }}/stop">
                                 <input type="hidden" name="next_path" value="/entries">
-                                <button type="submit">Stop</button>
+                                <button type="submit" class="btn-secondary">Stop</button>
                             </form>
                         {% endif %}
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="8">No time entries found.</td></tr>
+                <tr><td colspan="8" class="py-8 text-center text-slate-500 dark:text-slate-400">No time entries found.</td></tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </section>
 {% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Edit Client | Project Time Tracker{% endblock %}
+{% block content %}
+<section class="panel max-w-2xl">
+    <div class="mb-6 flex items-center justify-between gap-3">
+        <h2 class="text-xl font-semibold tracking-tight">Edit Client</h2>
+        <a href="/clients" hx-boost="false" class="btn-secondary">Back to clients</a>
+    </div>
+    <form method="post" action="/clients/{{ client.id }}/edit" class="grid gap-4">
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Client Name
+            <input type="text" name="name" value="{{ client.name }}" required class="field">
+        </label>
+        <button type="submit" class="btn">Save Changes</button>
+    </form>
+</section>
+{% endblock %}

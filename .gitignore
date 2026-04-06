@@ -34,3 +34,6 @@ data/
 Thumbs.db
 .idea/
 .vscode/
+
+#MCP Tools
+.playwright-mcp/

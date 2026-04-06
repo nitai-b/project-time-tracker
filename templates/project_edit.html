@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Edit Project | Project Time Tracker{% endblock %}
+{% block content %}
+<section class="panel max-w-3xl">
+    <div class="mb-6 flex items-center justify-between gap-3">
+        <h2 class="text-xl font-semibold tracking-tight">Edit Project</h2>
+        <a href="/projects" hx-boost="false" class="btn-secondary">Back to projects</a>
+    </div>
+    <form method="post" action="/projects/{{ project.id }}/edit" class="grid gap-4 md:grid-cols-2">
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Existing Client
+            <select name="client_id" class="field">
+                <option value="">Select client</option>
+                {% for client in clients %}
+                    <option value="{{ client.id }}" {% if client.id == project.client_id %}selected{% endif %}>{{ client.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            New Client
+            <input type="text" name="new_client_name" placeholder="Create client if needed" class="field">
+        </label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 md:col-span-2">
+            Project Name
+            <input type="text" name="name" value="{{ project.name }}" required class="field">
+        </label>
+        <div class="md:col-span-2">
+            <button type="submit" class="btn">Save Changes</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

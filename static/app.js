@@ -56,4 +56,76 @@ function syncEntryForm(form) {
     updateTasks();
 }
 
-document.querySelectorAll("[data-entry-form]").forEach(syncEntryForm);
+function formatHumanDate(date) {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfTarget = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const dayDifference = Math.round((startOfTarget - startOfToday) / 86400000);
+    const timeText = new Intl.DateTimeFormat(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+    }).format(date);
+
+    if (dayDifference === 0) {
+        return `Today at ${timeText}`;
+    }
+    if (dayDifference === -1) {
+        return `Yesterday at ${timeText}`;
+    }
+    if (dayDifference > -7 && dayDifference < 0) {
+        const weekday = new Intl.DateTimeFormat(undefined, { weekday: "long" }).format(date);
+        return `${weekday} at ${timeText}`;
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    }).format(date);
+}
+
+function initializeHumanDates(root) {
+    root.querySelectorAll("[data-human-datetime]").forEach((element) => {
+        const rawValue = element.getAttribute("datetime");
+        if (!rawValue) {
+            return;
+        }
+
+        const date = new Date(rawValue);
+        if (Number.isNaN(date.getTime())) {
+            return;
+        }
+
+        element.textContent = formatHumanDate(date);
+        element.title = new Intl.DateTimeFormat(undefined, {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+        }).format(date);
+    });
+}
+
+function initializeEntryForms(root) {
+    root.querySelectorAll("[data-entry-form]").forEach((form) => {
+        if (form.dataset.entryBound === "true") {
+            return;
+        }
+        form.dataset.entryBound = "true";
+        syncEntryForm(form);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    initializeEntryForms(document);
+    initializeHumanDates(document);
+});
+
+document.body.addEventListener("htmx:load", (event) => {
+    initializeEntryForms(event.target);
+    initializeHumanDates(event.target);
+});

@@ -16,6 +16,10 @@ from app.models import Client, Project, Task, TimeEntry
 router = APIRouter()
 
 
+def clean_text(value: str | None) -> str:
+    return (value or "").strip()
+
+
 def parse_optional_int(value: str | None) -> int | None:
     if value is None or value == "":
         return None
@@ -75,6 +79,113 @@ def get_form_data(db: Session) -> dict[str, Any]:
     projects = db.scalars(select(Project).options(joinedload(Project.client)).order_by(Project.name)).all()
     tasks = db.scalars(select(Task).options(joinedload(Task.project)).order_by(Task.name)).all()
     return {"clients": clients, "projects": projects, "tasks": tasks}
+
+
+def get_client_by_name(db: Session, name: str) -> Client | None:
+    return db.scalar(select(Client).where(func.lower(Client.name) == name.lower()))
+
+
+def get_project_by_name(db: Session, client_id: int, name: str) -> Project | None:
+    return db.scalar(
+        select(Project).where(Project.client_id == client_id, func.lower(Project.name) == name.lower())
+    )
+
+
+def get_task_by_name(db: Session, project_id: int, name: str) -> Task | None:
+    return db.scalar(
+        select(Task).where(Task.project_id == project_id, func.lower(Task.name) == name.lower())
+    )
+
+
+def resolve_client_selection(
+    db: Session, client_id_value: str | None, new_client_name: str | None, required: bool = False
+) -> Client | None:
+    client_id = parse_optional_int(client_id_value)
+    if client_id:
+        client = db.get(Client, client_id)
+        if not client:
+            raise HTTPException(status_code=404, detail="Selected client was not found.")
+        return client
+
+    clean_name = clean_text(new_client_name)
+    if clean_name:
+        existing = get_client_by_name(db, clean_name)
+        if existing:
+            return existing
+        client = Client(name=clean_name)
+        db.add(client)
+        db.flush()
+        return client
+
+    if required:
+        raise HTTPException(status_code=400, detail="Select a client or create a new one.")
+    return None
+
+
+def resolve_project_selection(
+    db: Session,
+    project_id_value: str | None,
+    new_project_name: str | None,
+    client: Client | None,
+    required: bool = False,
+) -> Project | None:
+    project_id = parse_optional_int(project_id_value)
+    if project_id:
+        project = db.get(Project, project_id)
+        if not project:
+            raise HTTPException(status_code=404, detail="Selected project was not found.")
+        if client and project.client_id != client.id:
+            raise HTTPException(status_code=400, detail="Selected project does not belong to the selected client.")
+        return project
+
+    clean_name = clean_text(new_project_name)
+    if clean_name:
+        if client is None:
+            raise HTTPException(status_code=400, detail="Choose or create a client before creating a project.")
+        existing = get_project_by_name(db, client.id, clean_name)
+        if existing:
+            return existing
+        project = Project(client_id=client.id, name=clean_name)
+        db.add(project)
+        db.flush()
+        return project
+
+    if required:
+        raise HTTPException(status_code=400, detail="Select a project or create a new one.")
+    return None
+
+
+def resolve_task_selection(
+    db: Session,
+    task_id_value: str | None,
+    new_task_name: str | None,
+    project: Project | None,
+    required: bool = False,
+) -> Task | None:
+    task_id = parse_optional_int(task_id_value)
+    if task_id:
+        task = db.get(Task, task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Selected task was not found.")
+        if project and task.project_id != project.id:
+            raise HTTPException(status_code=400, detail="Selected task does not belong to the selected project.")
+        return task
+
+    clean_name = clean_text(new_task_name)
+    if clean_name:
+        if project is None:
+            raise HTTPException(status_code=400, detail="Choose or create a project before creating a task.")
+        existing = get_task_by_name(db, project.id, clean_name)
+        if existing:
+            return existing
+        task = Task(project_id=project.id, name=clean_name)
+        db.add(task)
+        db.flush()
+        return task
+
+    if required:
+        raise HTTPException(status_code=400, detail="Select a task or create a new one.")
+    return None
 
 
 def validate_project_task(db: Session, project_id: int, task_id: int) -> tuple[Project, Task]:
@@ -143,7 +254,7 @@ def list_clients(request: Request, db: Session = Depends(get_db)) -> HTMLRespons
 
 @router.post("/clients")
 def create_client(name: str = Form(...), db: Session = Depends(get_db)) -> RedirectResponse:
-    clean_name = name.strip()
+    clean_name = clean_text(name)
     if not clean_name:
         return redirect_with_message("/clients", "Client name is required.", "error")
     existing = db.scalar(select(Client).where(func.lower(Client.name) == clean_name.lower()))
@@ -152,6 +263,36 @@ def create_client(name: str = Form(...), db: Session = Depends(get_db)) -> Redir
     db.add(Client(name=clean_name))
     db.commit()
     return redirect_with_message("/clients", "Client created.")
+
+
+@router.get("/clients/{client_id}/edit", response_class=HTMLResponse)
+def edit_client_form(request: Request, client_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
+    client = db.get(Client, client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found.")
+    return request.app.state.templates.TemplateResponse(
+        "client_edit.html", {"request": request, "client": client}
+    )
+
+
+@router.post("/clients/{client_id}/edit")
+def update_client(
+    client_id: int, name: str = Form(...), db: Session = Depends(get_db)
+) -> RedirectResponse:
+    client = db.get(Client, client_id)
+    if not client:
+        return redirect_with_message("/clients", "Client not found.", "error")
+    clean_name = clean_text(name)
+    if not clean_name:
+        return redirect_with_message(f"/clients/{client_id}/edit", "Client name is required.", "error")
+    existing = db.scalar(
+        select(Client).where(func.lower(Client.name) == clean_name.lower(), Client.id != client.id)
+    )
+    if existing:
+        return redirect_with_message(f"/clients/{client_id}/edit", "Client already exists.", "error")
+    client.name = clean_name
+    db.commit()
+    return redirect_with_message("/clients", "Client updated.")
 
 
 @router.post("/clients/{client_id}/delete")
@@ -179,12 +320,16 @@ def list_projects(request: Request, db: Session = Depends(get_db)) -> HTMLRespon
 
 @router.post("/projects")
 def create_project(
-    client_id: int = Form(...), name: str = Form(...), db: Session = Depends(get_db)
+    client_id: str = Form(""),
+    new_client_name: str = Form(""),
+    name: str = Form(...),
+    db: Session = Depends(get_db),
 ) -> RedirectResponse:
-    client = db.get(Client, client_id)
-    clean_name = name.strip()
-    if not client:
-        return redirect_with_message("/projects", "Client is required.", "error")
+    clean_name = clean_text(name)
+    try:
+        client = resolve_client_selection(db, client_id, new_client_name, required=True)
+    except HTTPException as exc:
+        return redirect_with_message("/projects", exc.detail, "error")
     if not clean_name:
         return redirect_with_message("/projects", "Project name is required.", "error")
     existing = db.scalar(
@@ -195,6 +340,58 @@ def create_project(
     db.add(Project(client_id=client.id, name=clean_name))
     db.commit()
     return redirect_with_message("/projects", "Project created.")
+
+
+@router.get("/projects/{project_id}/edit", response_class=HTMLResponse)
+def edit_project_form(request: Request, project_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
+    project = db.scalar(
+        select(Project).options(joinedload(Project.client)).where(Project.id == project_id)
+    )
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    return request.app.state.templates.TemplateResponse(
+        "project_edit.html",
+        {
+            "request": request,
+            "project": project,
+            "clients": db.scalars(select(Client).order_by(Client.name)).all(),
+        },
+    )
+
+
+@router.post("/projects/{project_id}/edit")
+def update_project(
+    project_id: int,
+    client_id: str = Form(""),
+    new_client_name: str = Form(""),
+    name: str = Form(...),
+    db: Session = Depends(get_db),
+) -> RedirectResponse:
+    project = db.get(Project, project_id)
+    if not project:
+        return redirect_with_message("/projects", "Project not found.", "error")
+    clean_name = clean_text(name)
+    if not clean_name:
+        return redirect_with_message(f"/projects/{project_id}/edit", "Project name is required.", "error")
+    try:
+        client = resolve_client_selection(db, client_id, new_client_name, required=True)
+    except HTTPException as exc:
+        return redirect_with_message(f"/projects/{project_id}/edit", exc.detail, "error")
+    existing = db.scalar(
+        select(Project).where(
+            Project.client_id == client.id,
+            func.lower(Project.name) == clean_name.lower(),
+            Project.id != project.id,
+        )
+    )
+    if existing:
+        return redirect_with_message(
+            f"/projects/{project_id}/edit", "Project already exists for this client.", "error"
+        )
+    project.client_id = client.id
+    project.name = clean_name
+    db.commit()
+    return redirect_with_message("/projects", "Project updated.")
 
 
 @router.post("/projects/{project_id}/delete")
@@ -222,18 +419,30 @@ def list_tasks(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     ).all()
     return request.app.state.templates.TemplateResponse(
         "tasks.html",
-        {"request": request, "tasks": tasks, "projects": db.scalars(select(Project).options(joinedload(Project.client)).order_by(Project.name)).all()},
+        {
+            "request": request,
+            "tasks": tasks,
+            "projects": db.scalars(select(Project).options(joinedload(Project.client)).order_by(Project.name)).all(),
+            "clients": db.scalars(select(Client).order_by(Client.name)).all(),
+        },
     )
 
 
 @router.post("/tasks")
 def create_task(
-    project_id: int = Form(...), name: str = Form(...), db: Session = Depends(get_db)
+    project_id: str = Form(""),
+    new_project_name: str = Form(""),
+    client_id: str = Form(""),
+    new_client_name: str = Form(""),
+    name: str = Form(...),
+    db: Session = Depends(get_db),
 ) -> RedirectResponse:
-    project = db.get(Project, project_id)
-    clean_name = name.strip()
-    if not project:
-        return redirect_with_message("/tasks", "Project is required.", "error")
+    clean_name = clean_text(name)
+    try:
+        client = resolve_client_selection(db, client_id, new_client_name, required=bool(clean_text(new_project_name)))
+        project = resolve_project_selection(db, project_id, new_project_name, client, required=True)
+    except HTTPException as exc:
+        return redirect_with_message("/tasks", exc.detail, "error")
     if not clean_name:
         return redirect_with_message("/tasks", "Task name is required.", "error")
     existing = db.scalar(
@@ -244,6 +453,63 @@ def create_task(
     db.add(Task(project_id=project.id, name=clean_name))
     db.commit()
     return redirect_with_message("/tasks", "Task created.")
+
+
+@router.get("/tasks/{task_id}/edit", response_class=HTMLResponse)
+def edit_task_form(request: Request, task_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
+    task = db.scalar(
+        select(Task)
+        .options(joinedload(Task.project).joinedload(Project.client))
+        .where(Task.id == task_id)
+    )
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found.")
+    return request.app.state.templates.TemplateResponse(
+        "task_edit.html",
+        {
+            "request": request,
+            "task": task,
+            **get_form_data(db),
+        },
+    )
+
+
+@router.post("/tasks/{task_id}/edit")
+def update_task(
+    task_id: int,
+    project_id: str = Form(""),
+    new_project_name: str = Form(""),
+    client_id: str = Form(""),
+    new_client_name: str = Form(""),
+    name: str = Form(...),
+    db: Session = Depends(get_db),
+) -> RedirectResponse:
+    task = db.get(Task, task_id)
+    if not task:
+        return redirect_with_message("/tasks", "Task not found.", "error")
+    clean_name = clean_text(name)
+    if not clean_name:
+        return redirect_with_message(f"/tasks/{task_id}/edit", "Task name is required.", "error")
+    try:
+        client = resolve_client_selection(db, client_id, new_client_name, required=bool(clean_text(new_project_name)))
+        project = resolve_project_selection(db, project_id, new_project_name, client, required=True)
+    except HTTPException as exc:
+        return redirect_with_message(f"/tasks/{task_id}/edit", exc.detail, "error")
+    existing = db.scalar(
+        select(Task).where(
+            Task.project_id == project.id,
+            func.lower(Task.name) == clean_name.lower(),
+            Task.id != task.id,
+        )
+    )
+    if existing:
+        return redirect_with_message(
+            f"/tasks/{task_id}/edit", "Task already exists for this project.", "error"
+        )
+    task.project_id = project.id
+    task.name = clean_name
+    db.commit()
+    return redirect_with_message("/tasks", "Task updated.")
 
 
 @router.post("/tasks/{task_id}/delete")
@@ -326,8 +592,12 @@ def list_entries(
 
 @router.post("/entries/manual")
 def create_manual_entry(
-    project_id: int = Form(...),
-    task_id: int = Form(...),
+    client_id: str = Form(""),
+    new_client_name: str = Form(""),
+    project_id: str = Form(""),
+    new_project_name: str = Form(""),
+    task_id: str = Form(""),
+    new_task_name: str = Form(""),
     start_time: str = Form(...),
     end_time: str = Form(...),
     notes: str = Form(""),
@@ -341,13 +611,15 @@ def create_manual_entry(
     if end_dt <= start_dt:
         return redirect_with_message("/entries", "End time must be after start time.", "error")
     try:
-        validate_project_task(db, project_id, task_id)
+        client = resolve_client_selection(db, client_id, new_client_name, required=bool(clean_text(new_project_name)))
+        project = resolve_project_selection(db, project_id, new_project_name, client, required=True)
+        task = resolve_task_selection(db, task_id, new_task_name, project, required=True)
     except HTTPException as exc:
         return redirect_with_message("/entries", exc.detail, "error")
     db.add(
         TimeEntry(
-            project_id=project_id,
-            task_id=task_id,
+            project_id=project.id,
+            task_id=task.id,
             start_time=start_dt,
             end_time=end_dt,
             notes=notes.strip() or None,
@@ -359,8 +631,12 @@ def create_manual_entry(
 
 @router.post("/entries/start")
 def start_entry(
-    project_id: int = Form(...),
-    task_id: int = Form(...),
+    client_id: str = Form(""),
+    new_client_name: str = Form(""),
+    project_id: str = Form(""),
+    new_project_name: str = Form(""),
+    task_id: str = Form(""),
+    new_task_name: str = Form(""),
     start_time: str = Form(""),
     notes: str = Form(""),
     db: Session = Depends(get_db),
@@ -368,7 +644,9 @@ def start_entry(
     if get_active_entry(db):
         return redirect_with_message("/", "Stop the current running entry first.", "error")
     try:
-        validate_project_task(db, project_id, task_id)
+        client = resolve_client_selection(db, client_id, new_client_name, required=bool(clean_text(new_project_name)))
+        project = resolve_project_selection(db, project_id, new_project_name, client, required=True)
+        task = resolve_task_selection(db, task_id, new_task_name, project, required=True)
     except HTTPException as exc:
         return redirect_with_message("/", exc.detail, "error")
     if not start_time.strip():
@@ -380,8 +658,8 @@ def start_entry(
             return redirect_with_message("/", "Invalid start time.", "error")
     db.add(
         TimeEntry(
-            project_id=project_id,
-            task_id=task_id,
+            project_id=project.id,
+            task_id=task.id,
             start_time=start_dt,
             end_time=None,
             notes=notes.strip() or None,

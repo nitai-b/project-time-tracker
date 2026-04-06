@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Edit Task | Project Time Tracker{% endblock %}
+{% block content %}
+<section class="panel max-w-4xl">
+    <div class="mb-6 flex items-center justify-between gap-3">
+        <h2 class="text-xl font-semibold tracking-tight">Edit Task</h2>
+        <a href="/tasks" hx-boost="false" class="btn-secondary">Back to tasks</a>
+    </div>
+    <form method="post" action="/tasks/{{ task.id }}/edit" class="grid gap-4 md:grid-cols-2 entry-form" data-entry-form>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Existing Client
+            <select name="client_id" data-client-select class="field">
+                <option value="">Select client</option>
+                {% for client in clients %}
+                    <option value="{{ client.id }}" {% if client.id == task.project.client_id %}selected{% endif %}>{{ client.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            New Client
+            <input type="text" name="new_client_name" placeholder="Create client if needed" class="field">
+        </label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Existing Project
+            <select name="project_id" data-project-select class="field">
+                <option value="">Select project</option>
+                {% for project in projects %}
+                    <option value="{{ project.id }}" data-client-id="{{ project.client_id }}" {% if project.id == task.project_id %}selected{% endif %}>{{ project.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            New Project
+            <input type="text" name="new_project_name" placeholder="Create project if needed" class="field">
+        </label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 md:col-span-2">
+            Task Name
+            <input type="text" name="name" value="{{ task.name }}" required class="field">
+        </label>
+        <div class="md:col-span-2">
+            <button type="submit" class="btn">Save Changes</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

@@ -1,31 +1,37 @@
 {% extends "base.html" %}
 {% block title %}Projects | Project Time Tracker{% endblock %}
 {% block content %}
-<section class="grid two">
-    <article class="card">
-        <h2>Create Project</h2>
-        <form method="post" action="/projects" class="stack">
-            <label>
-                Client
-                <select name="client_id" required>
+<section class="grid gap-6 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+    <article class="panel">
+        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Structure</p>
+        <h2 class="mt-2 text-xl font-semibold tracking-tight">Create Project</h2>
+        <form method="post" action="/projects" class="mt-6 grid gap-4">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Existing Client
+                <select name="client_id" class="field">
                     <option value="">Select client</option>
                     {% for client in clients %}
                         <option value="{{ client.id }}">{{ client.name }}</option>
                     {% endfor %}
                 </select>
             </label>
-            <label>
-                Name
-                <input type="text" name="name" required>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                New Client
+                <input type="text" name="new_client_name" placeholder="Create client if missing" class="field">
             </label>
-            <button type="submit">Add Project</button>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Project Name
+                <input type="text" name="name" required class="field">
+            </label>
+            <button type="submit" class="btn">Add Project</button>
         </form>
     </article>
 
-    <article class="card">
-        <h2>Projects</h2>
-        <table>
-            <thead>
+    <article class="panel">
+        <h2 class="text-xl font-semibold tracking-tight">Projects</h2>
+        <div class="mt-4 overflow-x-auto">
+        <table class="data-table">
+            <thead class="bg-slate-50/80 dark:bg-slate-950/40">
                 <tr>
                     <th>Client</th>
                     <th>Name</th>
@@ -33,23 +39,29 @@
                     <th></th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
                 {% for project in projects %}
-                    <tr>
+                    <tr class="transition hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
                         <td>{{ project.client.name }}</td>
                         <td>{{ project.name }}</td>
-                        <td>{{ friendly_datetime(project.created_at) }}</td>
                         <td>
+                            <time datetime="{{ project.created_at.isoformat() }}" data-human-datetime>
+                                {{ friendly_datetime(project.created_at) }}
+                            </time>
+                        </td>
+                        <td class="space-y-2">
+                            <a href="/projects/{{ project.id }}/edit" hx-boost="false" class="inline-flex rounded-lg px-2.5 py-1.5 text-sky-700 transition hover:bg-sky-50 hover:text-sky-800 dark:text-sky-300 dark:hover:bg-sky-950/40 dark:hover:text-sky-200">Edit</a>
                             <form method="post" action="/projects/{{ project.id }}/delete">
-                                <button type="submit" class="secondary">Delete</button>
+                                <button type="submit" class="btn-secondary">Delete</button>
                             </form>
                         </td>
                     </tr>
                 {% else %}
-                    <tr><td colspan="4">No projects yet.</td></tr>
+                    <tr><td colspan="4" class="py-8 text-center text-slate-500 dark:text-slate-400">No projects yet.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </article>
 </section>
 {% endblock %}

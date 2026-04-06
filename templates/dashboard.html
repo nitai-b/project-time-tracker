@@ -1,79 +1,115 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | Project Time Tracker{% endblock %}
 {% block content %}
-<section class="grid two">
-    <article class="card">
-        <h2>Today</h2>
-        <p class="metric">{{ format_duration(today_total) }}</p>
-        <p>This week: {{ format_duration(week_total) }}</p>
+<section class="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+    <article class="panel">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-sky-600 dark:text-sky-400">Totals</p>
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight">Today</h2>
+            </div>
+            <div class="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">Live</div>
+        </div>
+        <p class="mt-6 text-4xl font-semibold tracking-tight">{{ format_duration(today_total) }}</p>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">This week: {{ format_duration(week_total) }}</p>
     </article>
 
-    <article class="card">
-        <h2>Running Entry</h2>
+    <article class="panel">
+        <h2 class="text-xl font-semibold tracking-tight">Running Entry</h2>
         {% if active_entry %}
-            <p><strong>{{ active_entry.project.client.name }}</strong> / {{ active_entry.project.name }}</p>
-            <p>{{ active_entry.task.name }}</p>
-            <p>Started {{ friendly_datetime(active_entry.start_time) }}</p>
-            {% if active_entry.notes %}<p>{{ active_entry.notes }}</p>{% endif %}
-            <form method="post" action="/entries/{{ active_entry.id }}/stop">
+            <div class="mt-4 space-y-2 text-sm">
+                <p class="font-medium text-slate-950 dark:text-white">{{ active_entry.project.client.name }} / {{ active_entry.project.name }}</p>
+                <p class="text-slate-700 dark:text-slate-300">{{ active_entry.task.name }}</p>
+                <p class="text-slate-500 dark:text-slate-400">
+                    Started
+                    <time datetime="{{ active_entry.start_time.isoformat() }}" data-human-datetime>
+                        {{ friendly_datetime(active_entry.start_time) }}
+                    </time>
+                </p>
+                {% if active_entry.notes %}<p class="rounded-xl bg-slate-100 px-3 py-2 text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ active_entry.notes }}</p>{% endif %}
+            </div>
+            <form method="post" action="/entries/{{ active_entry.id }}/stop" class="mt-5">
                 <input type="hidden" name="next_path" value="/">
-                <button type="submit">Stop Timer</button>
+                <button type="submit" class="btn">Stop Timer</button>
             </form>
         {% else %}
-            <p>No active timer.</p>
+            <p class="mt-4 text-sm text-slate-600 dark:text-slate-400">No active timer.</p>
         {% endif %}
     </article>
 </section>
 
-<section class="card">
-    <h2>Start New Timer</h2>
-    <form method="post" action="/entries/start" class="stack entry-form" data-entry-form>
-        <label>
-            Client
-            <select data-client-select>
+<section class="mb-6 panel">
+    <div class="mb-6 flex items-center justify-between gap-3">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Quick start</p>
+            <h2 class="mt-2 text-xl font-semibold tracking-tight">Start New Timer</h2>
+        </div>
+    </div>
+    <form method="post" action="/entries/start" class="grid gap-4 md:grid-cols-2 xl:grid-cols-6 entry-form" data-entry-form>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Existing Client
+            <select name="client_id" data-client-select class="field">
                 <option value="">Select client</option>
                 {% for client in clients %}
                     <option value="{{ client.id }}">{{ client.name }}</option>
                 {% endfor %}
             </select>
         </label>
-        <label>
-            Project
-            <select name="project_id" required data-project-select>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            New Client
+            <input type="text" name="new_client_name" placeholder="Create client if missing" class="field">
+        </label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Existing Project
+            <select name="project_id" data-project-select class="field">
                 <option value="">Select project</option>
                 {% for project in projects %}
                     <option value="{{ project.id }}" data-client-id="{{ project.client_id }}">{{ project.name }}</option>
                 {% endfor %}
             </select>
         </label>
-        <label>
-            Task
-            <select name="task_id" required data-task-select>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            New Project
+            <input type="text" name="new_project_name" placeholder="Create project if missing" class="field">
+        </label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Existing Task
+            <select name="task_id" data-task-select class="field">
                 <option value="">Select task</option>
                 {% for task in tasks %}
                     <option value="{{ task.id }}" data-project-id="{{ task.project_id }}">{{ task.name }}</option>
                 {% endfor %}
             </select>
         </label>
-        <label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            New Task
+            <input type="text" name="new_task_name" placeholder="Create task if missing" class="field">
+        </label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
             Start Time
-            <input type="datetime-local" step="1" name="start_time" value="{{ form_defaults.start_time }}">
+            <input type="datetime-local" step="1" name="start_time" value="{{ form_defaults.start_time }}" class="field">
         </label>
-        <label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 md:col-span-2 xl:col-span-6">
             Notes
-            <textarea name="notes" rows="3" placeholder="Optional notes"></textarea>
+            <textarea name="notes" rows="3" placeholder="Optional notes" class="field"></textarea>
         </label>
-        <button type="submit" {% if active_entry %}disabled{% endif %}>Start Timer</button>
+        <div class="md:col-span-2 xl:col-span-6">
+            <button type="submit" class="btn" {% if active_entry %}disabled{% endif %}>Start Timer</button>
+        </div>
     </form>
 </section>
 
-<section class="card">
-    <div class="section-header">
-        <h2>Recent Entries</h2>
-        <a href="/entries">View all</a>
+<section class="panel">
+    <div class="mb-4 flex items-center justify-between gap-3">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Activity</p>
+            <h2 class="mt-2 text-xl font-semibold tracking-tight">Recent Entries</h2>
+        </div>
+        <a href="/entries" class="btn-secondary">View all</a>
     </div>
-    <table>
-        <thead>
+    <div class="overflow-x-auto">
+    <table class="data-table">
+        <thead class="bg-slate-50/80 dark:bg-slate-950/40">
             <tr>
                 <th>Client</th>
                 <th>Project</th>
@@ -81,24 +117,41 @@
                 <th>Start</th>
                 <th>End</th>
                 <th>Duration</th>
+                <th></th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
             {% for entry in recent_entries %}
-                <tr>
+                <tr class="transition hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
                     <td>{{ entry.project.client.name }}</td>
                     <td>{{ entry.project.name }}</td>
                     <td>{{ entry.task.name }}</td>
-                    <td>{{ friendly_datetime(entry.start_time) }}</td>
-                    <td>{{ friendly_datetime(entry.end_time) }}</td>
+                    <td>
+                        <time datetime="{{ entry.start_time.isoformat() }}" data-human-datetime>
+                            {{ friendly_datetime(entry.start_time) }}
+                        </time>
+                    </td>
+                    <td>
+                        {% if entry.end_time %}
+                            <time datetime="{{ entry.end_time.isoformat() }}" data-human-datetime>
+                                {{ friendly_datetime(entry.end_time) }}
+                            </time>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                     <td>{{ format_duration(entry.duration_seconds) }}</td>
+                    <td>
+                        <a href="/entries/{{ entry.id }}/edit" hx-boost="false" class="inline-flex rounded-lg px-2.5 py-1.5 text-sky-700 transition hover:bg-sky-50 hover:text-sky-800 dark:text-sky-300 dark:hover:bg-sky-950/40 dark:hover:text-sky-200">Edit</a>
+                    </td>
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="6">No time entries yet.</td>
+                    <td colspan="7" class="py-8 text-center text-slate-500 dark:text-slate-400">No time entries yet.</td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </section>
 {% endblock %}

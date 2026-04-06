@@ -34,7 +34,7 @@ cleanup() {
 
 trap cleanup EXIT INT TERM
 
-python -m uvicorn app.main:app --host "$HOST" --port "$PORT" &
+python -m uvicorn app.main:app --host "$HOST" --port "$PORT" --reload &
 SERVER_PID=$!
 
 for _ in $(seq 1 30); do

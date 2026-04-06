@@ -1,6 +1,6 @@
 # Project Time Tracker
 
-Simple local-first time tracking app built with FastAPI, SQLite, SQLAlchemy, and server-rendered Jinja templates.
+Simple local-first time tracking app built with FastAPI, SQLite, SQLAlchemy, server-rendered Jinja templates, HTMX, and Tailwind CSS.
 
 ## Features
 
@@ -10,6 +10,8 @@ Simple local-first time tracking app built with FastAPI, SQLite, SQLAlchemy, and
 - Project/task validation so a task must belong to the selected project
 - Dashboard with current timer, recent entries, and totals for today and this week
 - CSV export for time entries
+- HTMX-enhanced navigation and form submissions
+- Tailwind-based styling with system dark mode support via `prefers-color-scheme`
 - Example seed data for `SHP > New Tech Stack Implementation > Zapier Automations Porting to Python`
 
 ## File Structure
@@ -118,6 +120,7 @@ What it does:
 - All data is stored locally in SQLite
 - No authentication or external services are required
 - The UI is server-rendered, so there is no frontend build step
+- HTMX and Tailwind are loaded from CDN in the browser, so the UI expects internet access for those frontend assets unless you vendor them locally later
 
 ## Turning This into a CLI Later
 
