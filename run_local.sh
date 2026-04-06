@@ -25,6 +25,37 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 python -m app.seed
 
+server_is_ready() {
+    python - <<'PY'
+import urllib.request
+
+try:
+    with urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=1) as response:
+        raise SystemExit(0 if response.status == 200 else 1)
+except Exception:
+    raise SystemExit(1)
+PY
+}
+
+open_browser() {
+    if command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "$URL" >/dev/null 2>&1 &
+        return
+    fi
+    if command -v open >/dev/null 2>&1; then
+        open "$URL" >/dev/null 2>&1 &
+        return
+    fi
+    echo "Open this URL in your browser: $URL"
+}
+
+if server_is_ready; then
+    open_browser
+    echo "Project Time Tracker is already running at $URL"
+    echo "Reusing the existing dev server."
+    exit 0
+fi
+
 cleanup() {
     if [ -n "${SERVER_PID:-}" ] && kill -0 "$SERVER_PID" >/dev/null 2>&1; then
         kill "$SERVER_PID" >/dev/null 2>&1 || true
@@ -38,32 +69,11 @@ python -m uvicorn app.main:app --host "$HOST" --port "$PORT" --reload &
 SERVER_PID=$!
 
 for _ in $(seq 1 30); do
-    if python - <<'PY'
-import urllib.request
-
-try:
-    with urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=1) as response:
-        raise SystemExit(0 if response.status == 200 else 1)
-except Exception:
-    raise SystemExit(1)
-PY
-    then
+    if server_is_ready; then
         break
     fi
     sleep 1
 done
-
-open_browser() {
-    if command -v xdg-open >/dev/null 2>&1; then
-        xdg-open "$URL" >/dev/null 2>&1 &
-        return
-    fi
-    if command -v open >/dev/null 2>&1; then
-        open "$URL" >/dev/null 2>&1 &
-        return
-    fi
-    echo "Open this URL in your browser: $URL"
-}
 
 open_browser
 
