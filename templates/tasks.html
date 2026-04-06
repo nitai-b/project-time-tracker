@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Tasks | Project Time Tracker{% endblock %}
+{% block content %}
+<section class="grid two">
+    <article class="card">
+        <h2>Create Task</h2>
+        <form method="post" action="/tasks" class="stack">
+            <label>
+                Project
+                <select name="project_id" required>
+                    <option value="">Select project</option>
+                    {% for project in projects %}
+                        <option value="{{ project.id }}">{{ project.client.name }} / {{ project.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Name
+                <input type="text" name="name" required>
+            </label>
+            <button type="submit">Add Task</button>
+        </form>
+    </article>
+
+    <article class="card">
+        <h2>Tasks</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Client</th>
+                    <th>Project</th>
+                    <th>Task</th>
+                    <th>Created</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                    <tr>
+                        <td>{{ task.project.client.name }}</td>
+                        <td>{{ task.project.name }}</td>
+                        <td>{{ task.name }}</td>
+                        <td>{{ friendly_datetime(task.created_at) }}</td>
+                        <td>
+                            <form method="post" action="/tasks/{{ task.id }}/delete">
+                                <button type="submit" class="secondary">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5">No tasks yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </article>
+</section>
+{% endblock %}

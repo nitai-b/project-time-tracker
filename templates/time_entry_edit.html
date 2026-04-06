@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Edit Entry | Project Time Tracker{% endblock %}
+{% block content %}
+<section class="card">
+    <div class="section-header">
+        <h2>Edit Time Entry</h2>
+        <a href="/entries">Back to entries</a>
+    </div>
+    <form method="post" action="/entries/{{ entry.id }}/edit" class="stack entry-form" data-entry-form>
+        <label>
+            Client
+            <select data-client-select>
+                <option value="">Select client</option>
+                {% for client in clients %}
+                    <option value="{{ client.id }}" {% if client.id == entry.project.client_id %}selected{% endif %}>{{ client.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Project
+            <select name="project_id" required data-project-select>
+                <option value="">Select project</option>
+                {% for project in projects %}
+                    <option value="{{ project.id }}" data-client-id="{{ project.client_id }}" {% if project.id == entry.project_id %}selected{% endif %}>{{ project.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Task
+            <select name="task_id" required data-task-select>
+                <option value="">Select task</option>
+                {% for task in tasks %}
+                    <option value="{{ task.id }}" data-project-id="{{ task.project_id }}" {% if task.id == entry.task_id %}selected{% endif %}>{{ task.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Start Time
+            <input type="datetime-local" step="1" name="start_time" value="{{ datetime_input_value(entry.start_time) }}" required>
+        </label>
+        <label>
+            End Time
+            <input type="datetime-local" step="1" name="end_time" value="{{ datetime_input_value(entry.end_time) }}">
+        </label>
+        <label>
+            Notes
+            <textarea name="notes" rows="4">{{ entry.notes or "" }}</textarea>
+        </label>
+        <button type="submit">Save Changes</button>
+    </form>
+</section>
+{% endblock %}

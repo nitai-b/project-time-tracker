@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Project Time Tracker{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <h1><a href="/">Project Time Tracker</a></h1>
+        <nav>
+            <a href="/">Dashboard</a>
+            <a href="/clients">Clients</a>
+            <a href="/projects">Projects</a>
+            <a href="/tasks">Tasks</a>
+            <a href="/entries">Time Entries</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        {% set message = request.query_params.get('message') %}
+        {% if message %}
+            <div class="flash {{ request.query_params.get('level', 'info') }}">{{ message }}</div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', path='app.js') }}"></script>
+</body>
+</html>

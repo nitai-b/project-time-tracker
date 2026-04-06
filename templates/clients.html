@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Clients | Project Time Tracker{% endblock %}
+{% block content %}
+<section class="grid two">
+    <article class="card">
+        <h2>Create Client</h2>
+        <form method="post" action="/clients" class="stack">
+            <label>
+                Name
+                <input type="text" name="name" required>
+            </label>
+            <button type="submit">Add Client</button>
+        </form>
+    </article>
+
+    <article class="card">
+        <h2>Clients</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Created</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for client in clients %}
+                    <tr>
+                        <td>{{ client.name }}</td>
+                        <td>{{ friendly_datetime(client.created_at) }}</td>
+                        <td>
+                            <form method="post" action="/clients/{{ client.id }}/delete">
+                                <button type="submit" class="secondary">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="3">No clients yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </article>
+</section>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Time Entries | Project Time Tracker{% endblock %}
+{% block content %}
+<section class="card">
+    <div class="section-header">
+        <h2>Time Entries</h2>
+        <a href="/entries/export.csv">Export CSV</a>
+    </div>
+    <form method="get" action="/entries" class="filters">
+        <label>
+            Client
+            <select name="client_id">
+                <option value="">All</option>
+                {% for client in clients %}
+                    <option value="{{ client.id }}" {% if filters.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Project
+            <select name="project_id">
+                <option value="">All</option>
+                {% for project in projects %}
+                    <option value="{{ project.id }}" {% if filters.project_id == project.id %}selected{% endif %}>{{ project.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Task
+            <select name="task_id">
+                <option value="">All</option>
+                {% for task in tasks %}
+                    <option value="{{ task.id }}" {% if filters.task_id == task.id %}selected{% endif %}>{{ task.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Date
+            <input type="date" name="entry_date" value="{{ filters.entry_date }}">
+        </label>
+        <button type="submit">Filter</button>
+    </form>
+</section>
+
+<section class="grid two">
+    <article class="card">
+        <h2>Create Manual Entry</h2>
+        <form method="post" action="/entries/manual" class="stack entry-form" data-entry-form>
+            <label>
+                Client
+                <select data-client-select>
+                    <option value="">Select client</option>
+                    {% for client in clients %}
+                        <option value="{{ client.id }}">{{ client.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Project
+                <select name="project_id" required data-project-select>
+                    <option value="">Select project</option>
+                    {% for project in projects %}
+                        <option value="{{ project.id }}" data-client-id="{{ project.client_id }}">{{ project.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Task
+                <select name="task_id" required data-task-select>
+                    <option value="">Select task</option>
+                    {% for task in tasks %}
+                        <option value="{{ task.id }}" data-project-id="{{ task.project_id }}">{{ task.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Start Time
+                <input type="datetime-local" step="1" name="start_time" value="{{ form_defaults.start_time }}" required>
+            </label>
+            <label>
+                End Time
+                <input type="datetime-local" step="1" name="end_time" value="{{ form_defaults.end_time }}" required>
+            </label>
+            <label>
+                Notes
+                <textarea name="notes" rows="3" placeholder="Optional notes"></textarea>
+            </label>
+            <button type="submit">Create Entry</button>
+        </form>
+    </article>
+
+    <article class="card">
+        <h2>Current Timer</h2>
+        {% if active_entry %}
+            <p><strong>{{ active_entry.project.client.name }}</strong> / {{ active_entry.project.name }}</p>
+            <p>{{ active_entry.task.name }}</p>
+            <p>Started {{ friendly_datetime(active_entry.start_time) }}</p>
+            <form method="post" action="/entries/{{ active_entry.id }}/stop">
+                <input type="hidden" name="next_path" value="/entries">
+                <button type="submit">Stop Timer</button>
+            </form>
+        {% else %}
+            <p>No active timer.</p>
+        {% endif %}
+    </article>
+</section>
+
+<section class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Client</th>
+                <th>Project</th>
+                <th>Task</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Duration</th>
+                <th>Notes</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+                <tr>
+                    <td>{{ entry.project.client.name }}</td>
+                    <td>{{ entry.project.name }}</td>
+                    <td>{{ entry.task.name }}</td>
+                    <td>{{ friendly_datetime(entry.start_time) }}</td>
+                    <td>{{ friendly_datetime(entry.end_time) }}</td>
+                    <td>{{ format_duration(entry.duration_seconds) }}</td>
+                    <td>{{ entry.notes or "" }}</td>
+                    <td class="actions">
+                        <a href="/entries/{{ entry.id }}/edit">Edit</a>
+                        {% if not entry.end_time %}
+                            <form method="post" action="/entries/{{ entry.id }}/stop">
+                                <input type="hidden" name="next_path" value="/entries">
+                                <button type="submit">Stop</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="8">No time entries found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}
