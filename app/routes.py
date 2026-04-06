@@ -42,7 +42,7 @@ def format_duration(seconds: int | None) -> str:
     hours, remainder = divmod(max(seconds, 0), 3600)
     minutes, secs = divmod(remainder, 60)
     if hours:
-        return f"{hours}h {minutes}m"
+        return f"{hours}h {minutes}m {secs}s"
     if minutes:
         return f"{minutes}m {secs}s"
     return f"{secs}s"
@@ -72,6 +72,33 @@ def get_active_entry(db: Session) -> TimeEntry | None:
         .where(TimeEntry.end_time.is_(None))
         .order_by(TimeEntry.start_time.desc())
     )
+
+
+def is_entry_running(entry: TimeEntry | None) -> bool:
+    return entry is not None and entry.is_running
+
+
+def pause_entry_timer(entry: TimeEntry, paused_at: datetime | None = None) -> None:
+    if not entry.is_running:
+        raise HTTPException(status_code=400, detail="Time entry is not running.")
+    entry.paused_at = paused_at or datetime.now()
+
+
+def resume_entry_timer(entry: TimeEntry, resumed_at: datetime | None = None) -> None:
+    if not entry.is_paused:
+        raise HTTPException(status_code=400, detail="Time entry is not paused.")
+    resume_time = resumed_at or datetime.now()
+    entry.paused_seconds += max(int((resume_time - entry.paused_at).total_seconds()), 0)
+    entry.paused_at = None
+
+
+def stop_entry_timer(entry: TimeEntry, stopped_at: datetime | None = None) -> None:
+    if entry.end_time is not None:
+        raise HTTPException(status_code=400, detail="Time entry is already stopped.")
+    stop_time = stopped_at or datetime.now()
+    if entry.is_paused:
+        resume_entry_timer(entry, stop_time)
+    entry.end_time = stop_time
 
 
 def get_form_data(db: Session) -> dict[str, Any]:
@@ -203,15 +230,20 @@ def compute_range_totals(db: Session, start: datetime, end: datetime) -> int:
         select(TimeEntry).where(TimeEntry.start_time >= start, TimeEntry.start_time < end)
     ).all()
     total = 0
-    now = datetime.now()
     for entry in entries:
-        effective_end = entry.end_time or now
-        total += max(int((effective_end - entry.start_time).total_seconds()), 0)
+        duration_seconds = entry.duration_seconds
+        if duration_seconds is None:
+            duration_seconds = max(
+                int((entry.effective_end() - entry.start_time).total_seconds()) - entry.paused_seconds,
+                0,
+            )
+        total += duration_seconds
     return total
 
 
 @router.get("/", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    rendered_at = datetime.now()
     active_entry = get_active_entry(db)
     recent_entries = db.scalars(
         select(TimeEntry)
@@ -225,19 +257,28 @@ def dashboard(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
 
     today = date.today()
     week_start = today - timedelta(days=today.weekday())
-    today_total = compute_range_totals(db, datetime.combine(today, time.min), datetime.combine(today + timedelta(days=1), time.min))
+    today_total = compute_range_totals(
+        db,
+        datetime.combine(today, time.min),
+        datetime.combine(today + timedelta(days=1), time.min),
+    )
     week_total = compute_range_totals(
         db,
         datetime.combine(week_start, time.min),
         datetime.combine(week_start + timedelta(days=7), time.min),
     )
+    today_total_live = is_entry_running(active_entry) and active_entry.start_time.date() == today
+    week_total_live = is_entry_running(active_entry) and active_entry.start_time.date() >= week_start
 
     context = {
         "request": request,
         "active_entry": active_entry,
         "recent_entries": recent_entries,
         "today_total": today_total,
+        "today_total_live": today_total_live,
         "week_total": week_total,
+        "week_total_live": week_total_live,
+        "rendered_at_iso": rendered_at.isoformat(),
         "form_defaults": {"start_time": datetime_input_value(datetime.now())},
         **get_form_data(db),
     }
@@ -642,7 +683,7 @@ def start_entry(
     db: Session = Depends(get_db),
 ) -> RedirectResponse:
     if get_active_entry(db):
-        return redirect_with_message("/", "Stop the current running entry first.", "error")
+        return redirect_with_message("/", "Finish the current timer before starting another one.", "error")
     try:
         client = resolve_client_selection(db, client_id, new_client_name, required=bool(clean_text(new_project_name)))
         project = resolve_project_selection(db, project_id, new_project_name, client, required=True)
@@ -662,11 +703,43 @@ def start_entry(
             task_id=task.id,
             start_time=start_dt,
             end_time=None,
+            paused_at=None,
+            paused_seconds=0,
             notes=notes.strip() or None,
         )
     )
     db.commit()
     return redirect_with_message("/", "Timer started.")
+
+
+@router.post("/entries/{entry_id}/pause")
+def pause_entry(
+    entry_id: int, next_path: str = Form("/"), db: Session = Depends(get_db)
+) -> RedirectResponse:
+    entry = db.get(TimeEntry, entry_id)
+    if not entry:
+        return redirect_with_message(next_path or "/", "Time entry not found.", "error")
+    try:
+        pause_entry_timer(entry)
+    except HTTPException as exc:
+        return redirect_with_message(next_path or "/", exc.detail, "error")
+    db.commit()
+    return redirect_with_message(next_path or "/", "Timer paused.")
+
+
+@router.post("/entries/{entry_id}/resume")
+def resume_entry(
+    entry_id: int, next_path: str = Form("/"), db: Session = Depends(get_db)
+) -> RedirectResponse:
+    entry = db.get(TimeEntry, entry_id)
+    if not entry:
+        return redirect_with_message(next_path or "/", "Time entry not found.", "error")
+    try:
+        resume_entry_timer(entry)
+    except HTTPException as exc:
+        return redirect_with_message(next_path or "/", exc.detail, "error")
+    db.commit()
+    return redirect_with_message(next_path or "/", "Timer resumed.")
 
 
 @router.post("/entries/{entry_id}/stop")
@@ -676,9 +749,10 @@ def stop_entry(
     entry = db.get(TimeEntry, entry_id)
     if not entry:
         return redirect_with_message(next_path or "/", "Time entry not found.", "error")
-    if entry.end_time is not None:
-        return redirect_with_message(next_path or "/", "Time entry is already stopped.", "error")
-    entry.end_time = datetime.now()
+    try:
+        stop_entry_timer(entry)
+    except HTTPException as exc:
+        return redirect_with_message(next_path or "/", exc.detail, "error")
     db.commit()
     return redirect_with_message(next_path or "/", "Timer stopped.")
 
@@ -748,6 +822,15 @@ def update_entry(
     entry.task_id = task_id
     entry.start_time = start_dt
     entry.end_time = end_dt
+    if end_dt is not None:
+        entry.paused_at = None
+        entry.paused_seconds = 0
+    elif entry.paused_at is not None and entry.paused_at <= start_dt:
+        return redirect_with_message(
+            f"/entries/{entry_id}/edit",
+            "Paused time must be after the start time.",
+            "error",
+        )
     entry.notes = notes.strip() or None
     db.commit()
     return redirect_with_message("/entries", "Time entry updated.")

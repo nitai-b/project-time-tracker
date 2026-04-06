@@ -10,28 +10,74 @@
             </div>
             <div class="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">Live</div>
         </div>
-        <p class="mt-6 text-4xl font-semibold tracking-tight">{{ format_duration(today_total) }}</p>
-        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">This week: {{ format_duration(week_total) }}</p>
+        <p class="mt-6 text-4xl font-semibold tracking-tight">
+            <span
+                data-live-total
+                data-base-seconds="{{ today_total }}"
+                data-rendered-at="{{ rendered_at_iso }}"
+                {% if today_total_live %}data-track-now="true"{% endif %}
+            >{{ format_duration(today_total) }}</span>
+        </p>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            This week:
+            <span
+                data-live-total
+                data-base-seconds="{{ week_total }}"
+                data-rendered-at="{{ rendered_at_iso }}"
+                {% if week_total_live %}data-track-now="true"{% endif %}
+            >{{ format_duration(week_total) }}</span>
+        </p>
     </article>
 
     <article class="panel">
-        <h2 class="text-xl font-semibold tracking-tight">Running Entry</h2>
+        <h2 class="text-xl font-semibold tracking-tight">Current Timer</h2>
         {% if active_entry %}
             <div class="mt-4 space-y-2 text-sm">
                 <p class="font-medium text-slate-950 dark:text-white">{{ active_entry.project.client.name }} / {{ active_entry.project.name }}</p>
                 <p class="text-slate-700 dark:text-slate-300">{{ active_entry.task.name }}</p>
+                <p class="text-lg font-semibold text-slate-950 dark:text-white">
+                    {% if active_entry.is_running %}
+                        <span data-live-duration data-start-time="{{ active_entry.start_time.isoformat() }}">Running</span>
+                    {% else %}
+                        {{ format_duration(active_entry.duration_seconds) }}
+                    {% endif %}
+                </p>
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] {% if active_entry.is_paused %}text-amber-600 dark:text-amber-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %}">
+                    {% if active_entry.is_paused %}Paused{% else %}Running{% endif %}
+                </p>
                 <p class="text-slate-500 dark:text-slate-400">
                     Started
                     <time datetime="{{ active_entry.start_time.isoformat() }}" data-human-datetime>
                         {{ friendly_datetime(active_entry.start_time) }}
                     </time>
                 </p>
+                {% if active_entry.is_paused %}
+                    <p class="text-slate-500 dark:text-slate-400">
+                        Paused
+                        <time datetime="{{ active_entry.paused_at.isoformat() }}" data-human-datetime>
+                            {{ friendly_datetime(active_entry.paused_at) }}
+                        </time>
+                    </p>
+                {% endif %}
                 {% if active_entry.notes %}<p class="rounded-xl bg-slate-100 px-3 py-2 text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ active_entry.notes }}</p>{% endif %}
             </div>
-            <form method="post" action="/entries/{{ active_entry.id }}/stop" class="mt-5">
-                <input type="hidden" name="next_path" value="/">
-                <button type="submit" class="btn">Stop Timer</button>
-            </form>
+            <div class="mt-5 flex flex-wrap gap-3">
+                {% if active_entry.is_running %}
+                    <form method="post" action="/entries/{{ active_entry.id }}/pause">
+                        <input type="hidden" name="next_path" value="/">
+                        <button type="submit" class="btn-secondary">Pause</button>
+                    </form>
+                {% else %}
+                    <form method="post" action="/entries/{{ active_entry.id }}/resume">
+                        <input type="hidden" name="next_path" value="/">
+                        <button type="submit" class="btn-secondary">Resume</button>
+                    </form>
+                {% endif %}
+                <form method="post" action="/entries/{{ active_entry.id }}/stop">
+                    <input type="hidden" name="next_path" value="/">
+                    <button type="submit" class="btn">Stop Timer</button>
+                </form>
+            </div>
         {% else %}
             <p class="mt-4 text-sm text-slate-600 dark:text-slate-400">No active timer.</p>
         {% endif %}
@@ -136,13 +182,32 @@
                             <time datetime="{{ entry.end_time.isoformat() }}" data-human-datetime>
                                 {{ friendly_datetime(entry.end_time) }}
                             </time>
+                        {% elif entry.is_paused %}
+                            Paused
                         {% else %}
                             -
                         {% endif %}
                     </td>
-                    <td>{{ format_duration(entry.duration_seconds) }}</td>
+                    <td>
+                        {% if entry.is_running %}
+                            <span data-live-duration data-start-time="{{ entry.start_time.isoformat() }}">Running</span>
+                        {% else %}
+                            {{ format_duration(entry.duration_seconds) }}
+                        {% endif %}
+                    </td>
                     <td>
                         <a href="/entries/{{ entry.id }}/edit" hx-boost="false" class="inline-flex rounded-lg px-2.5 py-1.5 text-sky-700 transition hover:bg-sky-50 hover:text-sky-800 dark:text-sky-300 dark:hover:bg-sky-950/40 dark:hover:text-sky-200">Edit</a>
+                        {% if entry.is_running %}
+                            <form method="post" action="/entries/{{ entry.id }}/pause" class="mt-2">
+                                <input type="hidden" name="next_path" value="/">
+                                <button type="submit" class="btn-secondary">Pause</button>
+                            </form>
+                        {% elif entry.is_paused %}
+                            <form method="post" action="/entries/{{ entry.id }}/resume" class="mt-2">
+                                <input type="hidden" name="next_path" value="/">
+                                <button type="submit" class="btn-secondary">Resume</button>
+                            </form>
+                        {% endif %}
                     </td>
                 </tr>
             {% else %}

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -56,13 +56,31 @@ class TimeEntry(TimestampMixin, Base):
     task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"), nullable=False, index=True)
     start_time: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
     end_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    paused_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    paused_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     project: Mapped["Project"] = relationship(back_populates="time_entries")
     task: Mapped["Task"] = relationship(back_populates="time_entries")
 
     @property
+    def is_paused(self) -> bool:
+        return self.end_time is None and self.paused_at is not None
+
+    @property
+    def is_running(self) -> bool:
+        return self.end_time is None and self.paused_at is None
+
+    def effective_end(self, now: datetime | None = None) -> datetime:
+        if self.end_time is not None:
+            return self.end_time
+        if self.paused_at is not None:
+            return self.paused_at
+        return now or datetime.now()
+
+    @property
     def duration_seconds(self) -> int | None:
-        if self.end_time is None:
+        if self.end_time is None and self.paused_at is None:
             return None
-        return int((self.end_time - self.start_time).total_seconds())
+        elapsed = int((self.effective_end() - self.start_time).total_seconds()) - self.paused_seconds
+        return max(elapsed, 0)

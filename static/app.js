@@ -120,12 +120,141 @@ function initializeEntryForms(root) {
     });
 }
 
+function initializeDismissibleNotifications(root) {
+    root.querySelectorAll("[data-dismissible-notification]").forEach((element) => {
+        if (element.dataset.dismissibleBound === "true") {
+            return;
+        }
+        element.dataset.dismissibleBound = "true";
+    });
+}
+
+function formatDuration(seconds) {
+    const safeSeconds = Math.max(Math.floor(seconds), 0);
+    const hours = Math.floor(safeSeconds / 3600);
+    const minutes = Math.floor((safeSeconds % 3600) / 60);
+    const remainingSeconds = safeSeconds % 60;
+
+    if (hours) {
+        return `${hours}h ${minutes}m ${remainingSeconds}s`;
+    }
+    if (minutes) {
+        return `${minutes}m ${remainingSeconds}s`;
+    }
+    return `${remainingSeconds}s`;
+}
+
+function updateLiveDurations(root) {
+    root.querySelectorAll("[data-live-duration]").forEach((element) => {
+        const rawValue = element.dataset.startTime;
+        if (!rawValue) {
+            return;
+        }
+
+        const startTime = new Date(rawValue);
+        if (Number.isNaN(startTime.getTime())) {
+            return;
+        }
+
+        const elapsedSeconds = (Date.now() - startTime.getTime()) / 1000;
+        element.textContent = formatDuration(elapsedSeconds);
+        element.title = `Started ${new Intl.DateTimeFormat(undefined, {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+        }).format(startTime)}`;
+    });
+}
+
+function updateLiveTotals(root) {
+    root.querySelectorAll("[data-live-total]").forEach((element) => {
+        const baseSeconds = Number(element.dataset.baseSeconds);
+        const renderedAtValue = element.dataset.renderedAt;
+        if (!Number.isFinite(baseSeconds) || !renderedAtValue) {
+            return;
+        }
+
+        const renderedAt = new Date(renderedAtValue);
+        if (Number.isNaN(renderedAt.getTime())) {
+            return;
+        }
+
+        const shouldTrackNow = element.dataset.trackNow === "true";
+        const liveSeconds = shouldTrackNow
+            ? baseSeconds + (Date.now() - renderedAt.getTime()) / 1000
+            : baseSeconds;
+
+        element.textContent = formatDuration(liveSeconds);
+    });
+}
+
+let liveDurationIntervalId = null;
+
+function pageIsActiveForTimers() {
+    return document.visibilityState === "visible" && document.hasFocus();
+}
+
+function syncLiveDurationTimer() {
+    const hasLiveTimers =
+        document.querySelector("[data-live-duration]") !== null
+        || document.querySelector('[data-live-total][data-track-now="true"]') !== null;
+    const shouldRun = hasLiveTimers && pageIsActiveForTimers();
+
+    if (!shouldRun) {
+        if (liveDurationIntervalId !== null) {
+            window.clearInterval(liveDurationIntervalId);
+            liveDurationIntervalId = null;
+        }
+        return;
+    }
+
+    updateLiveDurations(document);
+    updateLiveTotals(document);
+    if (liveDurationIntervalId === null) {
+        liveDurationIntervalId = window.setInterval(() => {
+            if (!pageIsActiveForTimers()) {
+                syncLiveDurationTimer();
+                return;
+            }
+            updateLiveDurations(document);
+            updateLiveTotals(document);
+        }, 1000);
+    }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     initializeEntryForms(document);
     initializeHumanDates(document);
+    initializeDismissibleNotifications(document);
+    updateLiveDurations(document);
+    updateLiveTotals(document);
+    syncLiveDurationTimer();
 });
 
 document.body.addEventListener("htmx:load", (event) => {
     initializeEntryForms(event.target);
     initializeHumanDates(event.target);
+    initializeDismissibleNotifications(event.target);
+    updateLiveDurations(event.target);
+    updateLiveTotals(event.target);
+    syncLiveDurationTimer();
 });
+
+document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-dismiss-notification]");
+    if (!button) {
+        return;
+    }
+
+    const notification = button.closest("[data-dismissible-notification]");
+    if (notification) {
+        notification.remove();
+    }
+});
+
+document.addEventListener("visibilitychange", syncLiveDurationTimer);
+window.addEventListener("focus", syncLiveDurationTimer);
+window.addEventListener("blur", syncLiveDurationTimer);

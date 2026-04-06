@@ -85,8 +85,18 @@
           hx-indicator="#global-indicator">
         {% set message = request.query_params.get('message') %}
         {% if message %}
-            <div class="mb-6 rounded-2xl border px-4 py-3 text-sm {% if request.query_params.get('level', 'info') == 'error' %}border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-950 dark:bg-rose-950/50 dark:text-rose-200{% else %}border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-950 dark:bg-emerald-950/50 dark:text-emerald-200{% endif %}">
-                {{ message }}
+            <div
+                class="mb-6 flex items-start justify-between gap-4 rounded-2xl border px-4 py-3 text-sm {% if request.query_params.get('level', 'info') == 'error' %}border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-950 dark:bg-rose-950/50 dark:text-rose-200{% else %}border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-950 dark:bg-emerald-950/50 dark:text-emerald-200{% endif %}"
+                role="status"
+                data-dismissible-notification
+            >
+                <div class="min-w-0 flex-1">{{ message }}</div>
+                <button
+                    type="button"
+                    class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-base leading-none opacity-70 transition hover:bg-black/5 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-current/20 dark:hover:bg-white/10"
+                    aria-label="Close notification"
+                    data-dismiss-notification
+                >x</button>
             </div>
         {% endif %}
         <div class="mb-4 flex items-center justify-between gap-3">

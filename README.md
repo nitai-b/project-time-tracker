@@ -6,6 +6,7 @@ Simple local-first time tracking app built with FastAPI, SQLite, SQLAlchemy, ser
 
 - Clients, projects, tasks, and time entries stored as related records
 - One active timer at a time
+- Pause and resume support for the current timer
 - Manual time entry creation and editing
 - Project/task validation so a task must belong to the selected project
 - Dashboard with current timer, recent entries, and totals for today and this week
