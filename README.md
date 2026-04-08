@@ -65,7 +65,11 @@ pytest
 
 ## Initialize the Database
 
-The app creates the SQLite database and tables automatically on startup.
+Apply the Alembic migrations before running the app:
+
+```bash
+alembic upgrade head
+```
 
 Database file:
 
@@ -110,9 +114,29 @@ What it does:
 
 - creates `.venv` if needed
 - installs dependencies
-- initializes and seeds the database
+- applies database migrations and seeds the database
 - starts the FastAPI app
 - opens `http://127.0.0.1:8000` in your browser when possible
+
+## Schema Migrations
+
+Create a new migration:
+
+```bash
+alembic revision -m "describe change"
+```
+
+Create a migration from model metadata changes:
+
+```bash
+alembic revision --autogenerate -m "describe change"
+```
+
+Apply migrations:
+
+```bash
+alembic upgrade head
+```
 
 ## Main Relationship Rules
 

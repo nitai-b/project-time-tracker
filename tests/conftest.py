@@ -1,13 +1,16 @@
 from datetime import datetime
+from pathlib import Path
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import app.models as models
 import app.routes as routes
-from app.db import Base, get_db
+from app.db import get_db
 from app.main import app
 from app.models import Client, Project, Task
 
@@ -32,16 +35,18 @@ def frozen_time(monkeypatch):
 @pytest.fixture
 def session_factory(tmp_path):
     db_path = tmp_path / "test.db"
+    alembic_config = Config(str(Path(__file__).resolve().parent.parent / "alembic.ini"))
+    alembic_config.set_main_option("sqlalchemy.url", f"sqlite:///{db_path}")
+    command.upgrade(alembic_config, "head")
+
     engine = create_engine(
         f"sqlite:///{db_path}",
         connect_args={"check_same_thread": False},
     )
     SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-    Base.metadata.create_all(bind=engine)
 
     yield SessionLocal
 
-    Base.metadata.drop_all(bind=engine)
     engine.dispose()
 
 

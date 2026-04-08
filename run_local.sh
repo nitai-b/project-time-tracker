@@ -23,6 +23,7 @@ source "$VENV_DIR/bin/activate"
 
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+alembic upgrade head
 python -m app.seed
 
 server_is_ready() {

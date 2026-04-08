@@ -4,7 +4,6 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from app.db import Base, engine, ensure_time_entry_schema
 from app.routes import (
     datetime_input_value,
     format_duration,
@@ -25,12 +24,6 @@ app.state.templates = templates
 
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 app.include_router(router)
-
-
-@app.on_event("startup")
-def on_startup() -> None:
-    Base.metadata.create_all(bind=engine)
-    ensure_time_entry_schema()
 
 
 @app.get("/health")
