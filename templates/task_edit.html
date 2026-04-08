@@ -4,7 +4,14 @@
 <section class="panel max-w-4xl">
     <div class="mb-6 flex items-center justify-between gap-3">
         <h2 class="text-xl font-semibold tracking-tight">Edit Task</h2>
-        <a href="/tasks" hx-boost="false" class="btn-secondary">Back to tasks</a>
+        <div class="flex flex-wrap gap-3">
+            <a
+                href="/entries?entry_client_id={{ task.project.client_id }}&entry_project_id={{ task.project_id }}&entry_task_id={{ task.id }}#manual-entry"
+                hx-boost="false"
+                class="btn-secondary"
+            >Log time</a>
+            <a href="/tasks" hx-boost="false" class="btn-secondary">Back to tasks</a>
+        </div>
     </div>
     <form method="post" action="/tasks/{{ task.id }}/edit" class="grid gap-4 md:grid-cols-2 entry-form" data-entry-form>
         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">

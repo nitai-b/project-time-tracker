@@ -107,3 +107,22 @@ def test_stopping_while_paused_keeps_pause_time_out_of_duration(
         assert entry.duration_seconds == 15 * 60
     finally:
         session.close()
+
+
+def test_entries_page_preselects_task_for_manual_logging(client, project_task_ids):
+    response = client.get(
+        "/entries",
+        params={
+            "entry_client_id": project_task_ids["client_id"],
+            "entry_project_id": project_task_ids["project_id"],
+            "entry_task_id": project_task_ids["task_id"],
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.text
+    assert 'id="manual-entry"' in body
+    assert 'Task preselected' in body
+    assert f'<option value="{project_task_ids["client_id"]}" selected>Acme</option>' in body
+    assert f'<option value="{project_task_ids["project_id"]}" data-client-id="{project_task_ids["client_id"]}" selected>' in body
+    assert f'<option value="{project_task_ids["task_id"]}" data-project-id="{project_task_ids["project_id"]}" selected>' in body

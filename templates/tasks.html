@@ -65,6 +65,11 @@
                             </time>
                         </td>
                         <td class="space-y-2">
+                            <a
+                                href="/entries?entry_client_id={{ task.project.client_id }}&entry_project_id={{ task.project_id }}&entry_task_id={{ task.id }}#manual-entry"
+                                hx-boost="false"
+                                class="inline-flex rounded-lg px-2.5 py-1.5 text-emerald-700 transition hover:bg-emerald-50 hover:text-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-200"
+                            >Log time</a>
                             <a href="/tasks/{{ task.id }}/edit" hx-boost="false" class="inline-flex rounded-lg px-2.5 py-1.5 text-sky-700 transition hover:bg-sky-50 hover:text-sky-800 dark:text-sky-300 dark:hover:bg-sky-950/40 dark:hover:text-sky-200">Edit</a>
                             <form method="post" action="/tasks/{{ task.id }}/delete">
                                 <button type="submit" class="btn-secondary">Delete</button>

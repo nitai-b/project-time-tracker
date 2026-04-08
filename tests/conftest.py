@@ -83,6 +83,6 @@ def project_task_ids(session_factory):
         session.add(task)
         session.commit()
 
-        return {"project_id": project.id, "task_id": task.id}
+        return {"client_id": client.id, "project_id": project.id, "task_id": task.id}
     finally:
         session.close()

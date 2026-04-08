@@ -47,16 +47,24 @@
     </form>
 </section>
 
-<section class="mb-6 grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]">
+<section id="manual-entry" class="mb-6 grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]">
     <article class="panel">
-        <h2 class="text-xl font-semibold tracking-tight">Create Manual Entry</h2>
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 class="text-xl font-semibold tracking-tight">Create Manual Entry</h2>
+                <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">Use this when you forgot to start the timer and need to log a completed time period.</p>
+            </div>
+            {% if form_defaults.task_id %}
+                <span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">Task preselected</span>
+            {% endif %}
+        </div>
         <form method="post" action="/entries/manual" class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3 entry-form" data-entry-form>
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Existing Client
                 <select name="client_id" data-client-select class="field">
                     <option value="">Select client</option>
                     {% for client in clients %}
-                        <option value="{{ client.id }}">{{ client.name }}</option>
+                        <option value="{{ client.id }}" {% if form_defaults.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
                     {% endfor %}
                 </select>
             </label>
@@ -69,7 +77,7 @@
                 <select name="project_id" data-project-select class="field">
                     <option value="">Select project</option>
                     {% for project in projects %}
-                        <option value="{{ project.id }}" data-client-id="{{ project.client_id }}">{{ project.name }}</option>
+                        <option value="{{ project.id }}" data-client-id="{{ project.client_id }}" {% if form_defaults.project_id == project.id %}selected{% endif %}>{{ project.name }}</option>
                     {% endfor %}
                 </select>
             </label>
@@ -82,7 +90,7 @@
                 <select name="task_id" data-task-select class="field">
                     <option value="">Select task</option>
                     {% for task in tasks %}
-                        <option value="{{ task.id }}" data-project-id="{{ task.project_id }}">{{ task.name }}</option>
+                        <option value="{{ task.id }}" data-project-id="{{ task.project_id }}" {% if form_defaults.task_id == task.id %}selected{% endif %}>{{ task.name }}</option>
                     {% endfor %}
                 </select>
             </label>

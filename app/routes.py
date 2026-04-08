@@ -572,6 +572,9 @@ def list_entries(
     project_id: str | None = None,
     task_id: str | None = None,
     entry_date: str | None = None,
+    entry_client_id: str | None = None,
+    entry_project_id: str | None = None,
+    entry_task_id: str | None = None,
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     rendered_at = datetime.now()
@@ -579,6 +582,9 @@ def list_entries(
         parsed_client_id = parse_optional_int(client_id)
         parsed_project_id = parse_optional_int(project_id)
         parsed_task_id = parse_optional_int(task_id)
+        parsed_entry_client_id = parse_optional_int(entry_client_id)
+        parsed_entry_project_id = parse_optional_int(entry_project_id)
+        parsed_entry_task_id = parse_optional_int(entry_task_id)
     except HTTPException:
         return redirect_with_message("/entries", "Invalid filter value.", "error")
 
@@ -622,6 +628,9 @@ def list_entries(
         },
         "rendered_at_iso": rendered_at.isoformat(),
         "form_defaults": {
+            "client_id": parsed_entry_client_id,
+            "project_id": parsed_entry_project_id,
+            "task_id": parsed_entry_task_id,
             "start_time": datetime_input_value(datetime.now()),
             "end_time": datetime_input_value(datetime.now()),
         },
