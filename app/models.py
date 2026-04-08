@@ -78,9 +78,12 @@ class TimeEntry(TimestampMixin, Base):
             return self.paused_at
         return now or datetime.now()
 
+    def elapsed_seconds(self, now: datetime | None = None) -> int:
+        elapsed = int((self.effective_end(now) - self.start_time).total_seconds()) - self.paused_seconds
+        return max(elapsed, 0)
+
     @property
     def duration_seconds(self) -> int | None:
         if self.end_time is None and self.paused_at is None:
             return None
-        elapsed = int((self.effective_end() - self.start_time).total_seconds()) - self.paused_seconds
-        return max(elapsed, 0)
+        return self.elapsed_seconds()

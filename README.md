@@ -57,6 +57,12 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## Run Tests
+
+```bash
+pytest
+```
+
 ## Initialize the Database
 
 The app creates the SQLite database and tables automatically on startup.

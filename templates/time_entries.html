@@ -116,7 +116,11 @@
                 <p class="text-slate-700 dark:text-slate-300">{{ active_entry.task.name }}</p>
                 <p class="text-lg font-semibold text-slate-950 dark:text-white">
                     {% if active_entry.is_running %}
-                        <span data-live-duration data-start-time="{{ active_entry.start_time.isoformat() }}">Running</span>
+                        <span
+                            data-live-duration
+                            data-base-seconds="{{ active_entry.elapsed_seconds() }}"
+                            data-rendered-at="{{ rendered_at_iso }}"
+                        >{{ format_duration(active_entry.elapsed_seconds()) }}</span>
                     {% else %}
                         {{ format_duration(active_entry.duration_seconds) }}
                     {% endif %}
@@ -201,7 +205,11 @@
                     </td>
                     <td>
                         {% if entry.is_running %}
-                            <span data-live-duration data-start-time="{{ entry.start_time.isoformat() }}">Running</span>
+                            <span
+                                data-live-duration
+                                data-base-seconds="{{ entry.elapsed_seconds() }}"
+                                data-rendered-at="{{ rendered_at_iso }}"
+                            >{{ format_duration(entry.elapsed_seconds()) }}</span>
                         {% else %}
                             {{ format_duration(entry.duration_seconds) }}
                         {% endif %}

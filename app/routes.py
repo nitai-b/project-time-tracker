@@ -233,10 +233,7 @@ def compute_range_totals(db: Session, start: datetime, end: datetime) -> int:
     for entry in entries:
         duration_seconds = entry.duration_seconds
         if duration_seconds is None:
-            duration_seconds = max(
-                int((entry.effective_end() - entry.start_time).total_seconds()) - entry.paused_seconds,
-                0,
-            )
+            duration_seconds = entry.elapsed_seconds()
         total += duration_seconds
     return total
 
@@ -577,6 +574,7 @@ def list_entries(
     entry_date: str | None = None,
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
+    rendered_at = datetime.now()
     try:
         parsed_client_id = parse_optional_int(client_id)
         parsed_project_id = parse_optional_int(project_id)
@@ -622,6 +620,7 @@ def list_entries(
             "task_id": parsed_task_id,
             "entry_date": entry_date or "",
         },
+        "rendered_at_iso": rendered_at.isoformat(),
         "form_defaults": {
             "start_time": datetime_input_value(datetime.now()),
             "end_time": datetime_input_value(datetime.now()),

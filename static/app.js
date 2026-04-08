@@ -146,26 +146,27 @@ function formatDuration(seconds) {
 
 function updateLiveDurations(root) {
     root.querySelectorAll("[data-live-duration]").forEach((element) => {
-        const rawValue = element.dataset.startTime;
-        if (!rawValue) {
+        const baseSeconds = Number(element.dataset.baseSeconds);
+        const renderedAtValue = element.dataset.renderedAt;
+        if (!Number.isFinite(baseSeconds) || !renderedAtValue) {
             return;
         }
 
-        const startTime = new Date(rawValue);
-        if (Number.isNaN(startTime.getTime())) {
+        const renderedAt = new Date(renderedAtValue);
+        if (Number.isNaN(renderedAt.getTime())) {
             return;
         }
 
-        const elapsedSeconds = (Date.now() - startTime.getTime()) / 1000;
+        const elapsedSeconds = baseSeconds + (Date.now() - renderedAt.getTime()) / 1000;
         element.textContent = formatDuration(elapsedSeconds);
-        element.title = `Started ${new Intl.DateTimeFormat(undefined, {
+        element.title = `Elapsed at ${new Intl.DateTimeFormat(undefined, {
             year: "numeric",
             month: "long",
             day: "numeric",
             hour: "2-digit",
             minute: "2-digit",
             second: "2-digit",
-        }).format(startTime)}`;
+        }).format(renderedAt)}`;
     });
 }
 
