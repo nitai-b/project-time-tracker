@@ -4,7 +4,13 @@
 <section class="panel max-w-3xl">
     <div class="mb-6 flex items-center justify-between gap-3">
         <h2 class="text-xl font-semibold tracking-tight">Edit Time Entry</h2>
-        <a href="/entries" hx-boost="false" class="btn-secondary">Back to entries</a>
+        <div class="flex flex-wrap gap-3">
+            <form method="post" action="/entries/{{ entry.id }}/delete">
+                <input type="hidden" name="next_path" value="/entries?status=all">
+                <button type="submit" class="btn-secondary">Delete</button>
+            </form>
+            <a href="/entries" hx-boost="false" class="btn-secondary">Back to entries</a>
+        </div>
     </div>
     <form method="post" action="/entries/{{ entry.id }}/edit" class="grid gap-4 md:grid-cols-2 entry-form" data-entry-form>
         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">

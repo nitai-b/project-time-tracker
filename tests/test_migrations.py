@@ -5,7 +5,7 @@ from alembic.config import Config
 from sqlalchemy import create_engine, inspect
 
 
-def test_alembic_upgrade_adds_pause_columns_to_existing_time_entries_table(tmp_path):
+def test_alembic_upgrade_adds_pause_and_soft_delete_columns_to_existing_tables(tmp_path):
     db_path = tmp_path / "legacy.db"
     engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
 
@@ -71,10 +71,17 @@ def test_alembic_upgrade_adds_pause_columns_to_existing_time_entries_table(tmp_p
     command.upgrade(alembic_config, "head")
 
     inspector = inspect(engine)
-    columns = {column["name"] for column in inspector.get_columns("time_entries")}
+    time_entry_columns = {column["name"] for column in inspector.get_columns("time_entries")}
+    client_columns = {column["name"] for column in inspector.get_columns("clients")}
+    project_columns = {column["name"] for column in inspector.get_columns("projects")}
+    task_columns = {column["name"] for column in inspector.get_columns("tasks")}
 
-    assert "paused_at" in columns
-    assert "paused_seconds" in columns
+    assert "paused_at" in time_entry_columns
+    assert "paused_seconds" in time_entry_columns
+    assert "deleted_at" in time_entry_columns
+    assert "deleted_at" in client_columns
+    assert "deleted_at" in project_columns
+    assert "deleted_at" in task_columns
     assert "alembic_version" in set(inspector.get_table_names())
 
     engine.dispose()

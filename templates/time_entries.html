@@ -9,7 +9,15 @@
         </div>
         <a href="/entries/export.csv" hx-boost="false" class="btn-secondary">Export CSV</a>
     </div>
-    <form method="get" action="/entries" class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+    <form method="get" action="/entries" class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Status
+            <select name="status" class="field">
+                <option value="active" {% if filters.status == "active" %}selected{% endif %}>Active only</option>
+                <option value="all" {% if filters.status == "all" %}selected{% endif %}>Active and deleted</option>
+                <option value="deleted" {% if filters.status == "deleted" %}selected{% endif %}>Deleted only</option>
+            </select>
+        </label>
         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
             Client
             <select name="client_id" class="field">
@@ -165,7 +173,11 @@
                 {% endif %}
                 <form method="post" action="/entries/{{ active_entry.id }}/stop">
                     <input type="hidden" name="next_path" value="/entries">
-                    <button type="submit" class="btn">Stop Timer</button>
+                    <button type="submit" class="btn-secondary">Stop</button>
+                </form>
+                <form method="post" action="/entries/{{ active_entry.id }}/delete">
+                    <input type="hidden" name="next_path" value="/entries?status=all">
+                    <button type="submit" class="btn">Delete</button>
                 </form>
             </div>
         {% else %}
@@ -185,13 +197,14 @@
                 <th>Start</th>
                 <th>End</th>
                 <th>Duration</th>
+                <th>Status</th>
                 <th>Notes</th>
                 <th></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
             {% for entry in entries %}
-                <tr class="transition hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                <tr class="transition {% if entry.is_deleted %}bg-rose-50/60 dark:bg-rose-950/20{% else %}hover:bg-slate-50/80 dark:hover:bg-slate-800/40{% endif %}">
                     <td>{{ entry.project.client.name }}</td>
                     <td>{{ entry.project.name }}</td>
                     <td>{{ entry.task.name }}</td>
@@ -212,7 +225,9 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if entry.is_running %}
+                        {% if entry.is_deleted %}
+                            {{ format_duration(entry.duration_seconds) }}
+                        {% elif entry.is_running %}
                             <span
                                 data-live-duration
                                 data-base-seconds="{{ entry.elapsed_seconds() }}"
@@ -222,32 +237,57 @@
                             {{ format_duration(entry.duration_seconds) }}
                         {% endif %}
                     </td>
+                    <td>
+                        {% if entry.is_deleted %}
+                            <div class="text-sm text-rose-700 dark:text-rose-300">
+                                <div class="font-medium">Deleted</div>
+                                <time datetime="{{ entry.deleted_at.isoformat() }}" data-human-datetime>{{ friendly_datetime(entry.deleted_at) }}</time>
+                            </div>
+                        {% elif entry.is_paused %}
+                            <span class="text-amber-700 dark:text-amber-300">Paused</span>
+                        {% elif entry.is_running %}
+                            <span class="text-emerald-700 dark:text-emerald-300">Running</span>
+                        {% else %}
+                            <span class="text-slate-500 dark:text-slate-400">Stopped</span>
+                        {% endif %}
+                    </td>
                     <td>{{ entry.notes or "" }}</td>
                     <td class="space-y-2">
-                        <a href="/entries/{{ entry.id }}/edit" hx-boost="false" class="inline-flex rounded-lg px-2.5 py-1.5 text-sky-700 transition hover:bg-sky-50 hover:text-sky-800 dark:text-sky-300 dark:hover:bg-sky-950/40 dark:hover:text-sky-200">Edit</a>
-                        {% if entry.is_running %}
-                            <form method="post" action="/entries/{{ entry.id }}/pause">
-                                <input type="hidden" name="next_path" value="/entries">
-                                <button type="submit" class="btn-secondary">Pause</button>
+                        {% if entry.is_deleted %}
+                            <form method="post" action="/entries/{{ entry.id }}/restore">
+                                <input type="hidden" name="next_path" value="{{ current_path }}">
+                                <button type="submit" class="btn-secondary">Restore</button>
                             </form>
-                            <form method="post" action="/entries/{{ entry.id }}/stop">
-                                <input type="hidden" name="next_path" value="/entries">
-                                <button type="submit" class="btn-secondary">Stop</button>
-                            </form>
-                        {% elif entry.is_paused %}
-                            <form method="post" action="/entries/{{ entry.id }}/resume">
-                                <input type="hidden" name="next_path" value="/entries">
-                                <button type="submit" class="btn-secondary">Resume</button>
-                            </form>
-                            <form method="post" action="/entries/{{ entry.id }}/stop">
-                                <input type="hidden" name="next_path" value="/entries">
-                                <button type="submit" class="btn-secondary">Stop</button>
+                        {% else %}
+                            <a href="/entries/{{ entry.id }}/edit" hx-boost="false" class="inline-flex rounded-lg px-2.5 py-1.5 text-sky-700 transition hover:bg-sky-50 hover:text-sky-800 dark:text-sky-300 dark:hover:bg-sky-950/40 dark:hover:text-sky-200">Edit</a>
+                            {% if entry.is_running %}
+                                <form method="post" action="/entries/{{ entry.id }}/pause">
+                                    <input type="hidden" name="next_path" value="{{ current_path }}">
+                                    <button type="submit" class="btn-secondary">Pause</button>
+                                </form>
+                                <form method="post" action="/entries/{{ entry.id }}/stop">
+                                    <input type="hidden" name="next_path" value="{{ current_path }}">
+                                    <button type="submit" class="btn-secondary">Stop</button>
+                                </form>
+                            {% elif entry.is_paused %}
+                                <form method="post" action="/entries/{{ entry.id }}/resume">
+                                    <input type="hidden" name="next_path" value="{{ current_path }}">
+                                    <button type="submit" class="btn-secondary">Resume</button>
+                                </form>
+                                <form method="post" action="/entries/{{ entry.id }}/stop">
+                                    <input type="hidden" name="next_path" value="{{ current_path }}">
+                                    <button type="submit" class="btn-secondary">Stop</button>
+                                </form>
+                            {% endif %}
+                            <form method="post" action="/entries/{{ entry.id }}/delete">
+                                <input type="hidden" name="next_path" value="{{ current_path }}">
+                                <button type="submit" class="btn-secondary">Delete</button>
                             </form>
                         {% endif %}
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="8" class="py-8 text-center text-slate-500 dark:text-slate-400">No time entries found.</td></tr>
+                <tr><td colspan="9" class="py-8 text-center text-slate-500 dark:text-slate-400">No time entries found.</td></tr>
             {% endfor %}
         </tbody>
     </table>

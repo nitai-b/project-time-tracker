@@ -81,6 +81,10 @@
                     <input type="hidden" name="next_path" value="/">
                     <button type="submit" class="btn">Stop Timer</button>
                 </form>
+                <form method="post" action="/entries/{{ active_entry.id }}/delete">
+                    <input type="hidden" name="next_path" value="/entries?status=all">
+                    <button type="submit" class="btn-secondary">Delete</button>
+                </form>
             </div>
         {% else %}
             <p class="mt-4 text-sm text-slate-600 dark:text-slate-400">No active timer.</p>
@@ -216,6 +220,10 @@
                                 <button type="submit" class="btn-secondary">Resume</button>
                             </form>
                         {% endif %}
+                        <form method="post" action="/entries/{{ entry.id }}/delete" class="mt-2">
+                            <input type="hidden" name="next_path" value="/entries?status=all">
+                            <button type="submit" class="btn-secondary">Delete</button>
+                        </form>
                     </td>
                 </tr>
             {% else %}
