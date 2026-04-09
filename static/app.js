@@ -129,6 +129,53 @@ function initializeDismissibleNotifications(root) {
     });
 }
 
+function closeModal(modal) {
+    if (!modal) {
+        return;
+    }
+    modal.dataset.open = "false";
+    document.body.classList.remove("overflow-hidden");
+}
+
+function openModal(modal) {
+    if (!modal) {
+        return;
+    }
+    document.querySelectorAll("[data-modal][data-open='true']").forEach((otherModal) => {
+        if (otherModal !== modal) {
+            otherModal.dataset.open = "false";
+        }
+    });
+    modal.dataset.open = "true";
+    document.body.classList.add("overflow-hidden");
+    const firstField = modal.querySelector("input, select, textarea, button");
+    if (firstField) {
+        firstField.focus();
+    }
+}
+
+function initializeModals(root) {
+    root.querySelectorAll("[data-modal]").forEach((modal) => {
+        if (modal.dataset.modalBound === "true") {
+            if (modal.dataset.open === "true") {
+                document.body.classList.add("overflow-hidden");
+            }
+            return;
+        }
+        modal.dataset.modalBound = "true";
+
+        if (modal.dataset.open === "true") {
+            document.body.classList.add("overflow-hidden");
+        }
+
+        modal.addEventListener("click", (event) => {
+            if (event.target === modal || event.target.closest("[data-close-modal]")) {
+                closeModal(modal);
+            }
+        });
+    });
+}
+
 function formatDuration(seconds) {
     const safeSeconds = Math.max(Math.floor(seconds), 0);
     const hours = Math.floor(safeSeconds / 3600);
@@ -230,6 +277,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initializeEntryForms(document);
     initializeHumanDates(document);
     initializeDismissibleNotifications(document);
+    initializeModals(document);
     updateLiveDurations(document);
     updateLiveTotals(document);
     syncLiveDurationTimer();
@@ -239,12 +287,20 @@ document.body.addEventListener("htmx:load", (event) => {
     initializeEntryForms(event.target);
     initializeHumanDates(event.target);
     initializeDismissibleNotifications(event.target);
+    initializeModals(event.target);
     updateLiveDurations(event.target);
     updateLiveTotals(event.target);
     syncLiveDurationTimer();
 });
 
 document.addEventListener("click", (event) => {
+    const modalTrigger = event.target.closest("[data-open-modal]");
+    if (modalTrigger) {
+        const modal = document.getElementById(modalTrigger.dataset.openModal);
+        openModal(modal);
+        return;
+    }
+
     const button = event.target.closest("[data-dismiss-notification]");
     if (!button) {
         return;
@@ -253,6 +309,16 @@ document.addEventListener("click", (event) => {
     const notification = button.closest("[data-dismissible-notification]");
     if (notification) {
         notification.remove();
+    }
+});
+
+document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") {
+        return;
+    }
+    const openModalElement = document.querySelector("[data-modal][data-open='true']");
+    if (openModalElement) {
+        closeModal(openModalElement);
     }
 });
 

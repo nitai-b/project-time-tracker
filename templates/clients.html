@@ -1,22 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Clients | Project Time Tracker{% endblock %}
 {% block content %}
-<section class="grid gap-6 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-    <article class="panel">
-        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Directory</p>
-        <h2 class="mt-2 text-xl font-semibold tracking-tight">Create Client</h2>
-        <form method="post" action="/clients" class="mt-6 grid gap-4">
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Name
-                <input type="text" name="name" required class="field">
-            </label>
-            <button type="submit" class="btn">Add Client</button>
-        </form>
-    </article>
-
-    <article class="panel">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <h2 class="text-xl font-semibold tracking-tight">Clients</h2>
+<section class="panel">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Directory</p>
+            <h2 class="mt-2 text-xl font-semibold tracking-tight">Clients</h2>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <button type="button" class="btn" data-open-modal="create-client-modal">Create Client</button>
             <form method="get" action="/clients" class="flex items-end gap-3">
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Status
@@ -29,56 +21,79 @@
                 <button type="submit" class="btn-secondary">Apply</button>
             </form>
         </div>
-        <div class="mt-4 overflow-x-auto">
-        <table class="data-table">
-            <thead class="bg-slate-50/80 dark:bg-slate-950/40">
-                <tr>
-                    <th>Name</th>
-                    <th>Created</th>
-                    <th>Status</th>
-                    <th></th>
+    </div>
+
+    <div class="mt-6 overflow-x-auto">
+    <table class="data-table">
+        <thead class="bg-slate-50/80 dark:bg-slate-950/40">
+            <tr>
+                <th>Name</th>
+                <th>Created</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+            {% for client in clients %}
+                <tr class="transition {% if client.is_deleted %}bg-rose-50/60 dark:bg-rose-950/20{% else %}hover:bg-slate-50/80 dark:hover:bg-slate-800/40{% endif %}">
+                    <td><span class="{% if client.is_deleted %}line-through text-slate-400 dark:text-slate-500{% endif %}">{{ client.name }}</span></td>
+                    <td>
+                        <time datetime="{{ client.created_at.isoformat() }}" data-human-datetime>
+                            {{ friendly_datetime(client.created_at) }}
+                        </time>
+                    </td>
+                    <td>
+                        {% if client.is_deleted %}
+                            <div class="text-sm text-rose-700 dark:text-rose-300">
+                                <div class="font-medium">Deleted</div>
+                                <time datetime="{{ client.deleted_at.isoformat() }}" data-human-datetime>{{ friendly_datetime(client.deleted_at) }}</time>
+                            </div>
+                        {% else %}
+                            <span class="text-emerald-700 dark:text-emerald-300">Active</span>
+                        {% endif %}
+                    </td>
+                    <td class="space-y-2">
+                        {% if client.is_deleted %}
+                            <form method="post" action="/clients/{{ client.id }}/restore">
+                                <input type="hidden" name="next_path" value="{{ current_path }}">
+                                <button type="submit" class="btn-secondary">Restore</button>
+                            </form>
+                        {% else %}
+                            <a href="/clients/{{ client.id }}/edit" hx-boost="false" class="inline-flex rounded-lg px-2.5 py-1.5 text-sky-700 transition hover:bg-sky-50 hover:text-sky-800 dark:text-sky-300 dark:hover:bg-sky-950/40 dark:hover:text-sky-200">Edit</a>
+                            <form method="post" action="/clients/{{ client.id }}/delete">
+                                <input type="hidden" name="next_path" value="{{ current_path }}">
+                                <button type="submit" class="btn-secondary">Delete</button>
+                            </form>
+                        {% endif %}
+                    </td>
                 </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                {% for client in clients %}
-                    <tr class="transition {% if client.is_deleted %}bg-rose-50/60 dark:bg-rose-950/20{% else %}hover:bg-slate-50/80 dark:hover:bg-slate-800/40{% endif %}">
-                        <td><span class="{% if client.is_deleted %}line-through text-slate-400 dark:text-slate-500{% endif %}">{{ client.name }}</span></td>
-                        <td>
-                            <time datetime="{{ client.created_at.isoformat() }}" data-human-datetime>
-                                {{ friendly_datetime(client.created_at) }}
-                            </time>
-                        </td>
-                        <td>
-                            {% if client.is_deleted %}
-                                <div class="text-sm text-rose-700 dark:text-rose-300">
-                                    <div class="font-medium">Deleted</div>
-                                    <time datetime="{{ client.deleted_at.isoformat() }}" data-human-datetime>{{ friendly_datetime(client.deleted_at) }}</time>
-                                </div>
-                            {% else %}
-                                <span class="text-emerald-700 dark:text-emerald-300">Active</span>
-                            {% endif %}
-                        </td>
-                        <td class="space-y-2">
-                            {% if client.is_deleted %}
-                                <form method="post" action="/clients/{{ client.id }}/restore">
-                                    <input type="hidden" name="next_path" value="{{ current_path }}">
-                                    <button type="submit" class="btn-secondary">Restore</button>
-                                </form>
-                            {% else %}
-                                <a href="/clients/{{ client.id }}/edit" hx-boost="false" class="inline-flex rounded-lg px-2.5 py-1.5 text-sky-700 transition hover:bg-sky-50 hover:text-sky-800 dark:text-sky-300 dark:hover:bg-sky-950/40 dark:hover:text-sky-200">Edit</a>
-                                <form method="post" action="/clients/{{ client.id }}/delete">
-                                    <input type="hidden" name="next_path" value="{{ current_path }}">
-                                    <button type="submit" class="btn-secondary">Delete</button>
-                                </form>
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr><td colspan="4" class="py-8 text-center text-slate-500 dark:text-slate-400">No clients found.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        </div>
-    </article>
+            {% else %}
+                <tr><td colspan="4" class="py-8 text-center text-slate-500 dark:text-slate-400">No clients found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
 </section>
+{% endblock %}
+{% block page_modals %}
+<div id="create-client-modal" class="modal-shell" data-modal data-open="false">
+    <div class="modal-card">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Directory</p>
+                <h2 class="mt-2 text-xl font-semibold tracking-tight">Create Client</h2>
+            </div>
+            <button type="button" class="btn-secondary" data-close-modal>Close</button>
+        </div>
+        <form method="post" action="/clients" class="mt-6 grid gap-4">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Name
+                <input type="text" name="name" required class="field">
+            </label>
+            <div class="flex justify-end">
+                <button type="submit" class="btn">Add Client</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

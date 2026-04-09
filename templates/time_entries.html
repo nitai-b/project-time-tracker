@@ -7,7 +7,10 @@
             <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Records</p>
             <h2 class="mt-2 text-xl font-semibold tracking-tight">Time Entries</h2>
         </div>
-        <a href="/entries/export.csv" hx-boost="false" class="btn-secondary">Export CSV</a>
+        <div class="flex flex-wrap gap-3">
+            <button type="button" class="btn" data-open-modal="manual-entry-modal">Create Manual Entry</button>
+            <a href="/entries/export.csv" hx-boost="false" class="btn-secondary">Export CSV</a>
+        </div>
     </div>
     <form method="get" action="/entries" class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -55,111 +58,34 @@
     </form>
 </section>
 
-<section id="manual-entry" class="mb-6 grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]">
-    <article class="panel">
-        <div class="flex items-start justify-between gap-4">
-            <div>
-                <h2 class="text-xl font-semibold tracking-tight">Create Manual Entry</h2>
-                <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">Use this when you forgot to start the timer and need to log a completed time period.</p>
-            </div>
-            {% if form_defaults.task_id %}
-                <span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">Task preselected</span>
+<section id="manual-entry" class="mb-6 panel-compact">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Current Timer</p>
+            {% if active_entry %}
+                <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <span class="font-medium text-slate-950 dark:text-white">{{ active_entry.project.client.name }} / {{ active_entry.project.name }} / {{ active_entry.task.name }}</span>
+                    <span class="text-sm text-slate-600 dark:text-slate-400">
+                        {% if active_entry.is_running %}
+                            <span
+                                data-live-duration
+                                data-base-seconds="{{ active_entry.elapsed_seconds() }}"
+                                data-rendered-at="{{ rendered_at_iso }}"
+                            >{{ format_duration(active_entry.elapsed_seconds()) }}</span>
+                        {% else %}
+                            {{ format_duration(active_entry.duration_seconds) }}
+                        {% endif %}
+                    </span>
+                    <span class="text-xs font-semibold uppercase tracking-[0.16em] {% if active_entry.is_paused %}text-amber-600 dark:text-amber-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %}">
+                        {% if active_entry.is_paused %}Paused{% else %}Running{% endif %}
+                    </span>
+                </div>
+            {% else %}
+                <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">No active timer.</p>
             {% endif %}
         </div>
-        <form method="post" action="/entries/manual" class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3 entry-form" data-entry-form>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Existing Client
-                <select name="client_id" data-client-select class="field">
-                    <option value="">Select client</option>
-                    {% for client in clients %}
-                        <option value="{{ client.id }}" {% if form_defaults.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                New Client
-                <input type="text" name="new_client_name" placeholder="Create client if missing" class="field">
-            </label>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Existing Project
-                <select name="project_id" data-project-select class="field">
-                    <option value="">Select project</option>
-                    {% for project in projects %}
-                        <option value="{{ project.id }}" data-client-id="{{ project.client_id }}" {% if form_defaults.project_id == project.id %}selected{% endif %}>{{ project.name }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                New Project
-                <input type="text" name="new_project_name" placeholder="Create project if missing" class="field">
-            </label>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Existing Task
-                <select name="task_id" data-task-select class="field">
-                    <option value="">Select task</option>
-                    {% for task in tasks %}
-                        <option value="{{ task.id }}" data-project-id="{{ task.project_id }}" {% if form_defaults.task_id == task.id %}selected{% endif %}>{{ task.name }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                New Task
-                <input type="text" name="new_task_name" placeholder="Create task if missing" class="field">
-            </label>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Start Time
-                <input type="datetime-local" step="1" name="start_time" value="{{ form_defaults.start_time }}" required class="field">
-            </label>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                End Time
-                <input type="datetime-local" step="1" name="end_time" value="{{ form_defaults.end_time }}" required class="field">
-            </label>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 md:col-span-2 xl:col-span-3">
-                Notes
-                <textarea name="notes" rows="3" placeholder="Optional notes" class="field"></textarea>
-            </label>
-            <div class="md:col-span-2 xl:col-span-3">
-                <button type="submit" class="btn">Create Entry</button>
-            </div>
-        </form>
-    </article>
-
-    <article class="panel">
-        <h2 class="text-xl font-semibold tracking-tight">Current Timer</h2>
-        {% if active_entry %}
-            <div class="mt-4 space-y-2 text-sm">
-                <p class="font-medium text-slate-950 dark:text-white">{{ active_entry.project.client.name }} / {{ active_entry.project.name }}</p>
-                <p class="text-slate-700 dark:text-slate-300">{{ active_entry.task.name }}</p>
-                <p class="text-lg font-semibold text-slate-950 dark:text-white">
-                    {% if active_entry.is_running %}
-                        <span
-                            data-live-duration
-                            data-base-seconds="{{ active_entry.elapsed_seconds() }}"
-                            data-rendered-at="{{ rendered_at_iso }}"
-                        >{{ format_duration(active_entry.elapsed_seconds()) }}</span>
-                    {% else %}
-                        {{ format_duration(active_entry.duration_seconds) }}
-                    {% endif %}
-                </p>
-                <p class="text-xs font-semibold uppercase tracking-[0.16em] {% if active_entry.is_paused %}text-amber-600 dark:text-amber-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %}">
-                    {% if active_entry.is_paused %}Paused{% else %}Running{% endif %}
-                </p>
-                <p class="text-slate-500 dark:text-slate-400">
-                    Started
-                    <time datetime="{{ active_entry.start_time.isoformat() }}" data-human-datetime>
-                        {{ friendly_datetime(active_entry.start_time) }}
-                    </time>
-                </p>
-                {% if active_entry.is_paused %}
-                    <p class="text-slate-500 dark:text-slate-400">
-                        Paused
-                        <time datetime="{{ active_entry.paused_at.isoformat() }}" data-human-datetime>
-                            {{ friendly_datetime(active_entry.paused_at) }}
-                        </time>
-                    </p>
-                {% endif %}
-            </div>
-            <div class="mt-5 flex flex-wrap gap-3">
+        <div class="flex flex-wrap gap-3">
+            {% if active_entry %}
                 {% if active_entry.is_running %}
                     <form method="post" action="/entries/{{ active_entry.id }}/pause">
                         <input type="hidden" name="next_path" value="/entries">
@@ -175,15 +101,10 @@
                     <input type="hidden" name="next_path" value="/entries">
                     <button type="submit" class="btn-secondary">Stop</button>
                 </form>
-                <form method="post" action="/entries/{{ active_entry.id }}/delete">
-                    <input type="hidden" name="next_path" value="/entries?status=all">
-                    <button type="submit" class="btn">Delete</button>
-                </form>
-            </div>
-        {% else %}
-            <p class="mt-4 text-sm text-slate-600 dark:text-slate-400">No active timer.</p>
-        {% endif %}
-    </article>
+            {% endif %}
+            <button type="button" class="btn" data-open-modal="manual-entry-modal">Create Manual Entry</button>
+        </div>
+    </div>
 </section>
 
 <section class="panel">
@@ -293,4 +214,83 @@
     </table>
     </div>
 </section>
+{% endblock %}
+{% block page_modals %}
+<div
+    id="manual-entry-modal"
+    class="modal-shell"
+    data-modal
+    data-open="{% if form_defaults.task_id %}true{% else %}false{% endif %}"
+>
+    <div class="modal-card">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 class="text-xl font-semibold tracking-tight">Create Manual Entry</h2>
+                <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">Use this when you forgot to start the timer and need to log a completed time period.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                {% if form_defaults.task_id %}
+                    <span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">Task preselected</span>
+                {% endif %}
+                <button type="button" class="btn-secondary" data-close-modal>Close</button>
+            </div>
+        </div>
+        <form method="post" action="/entries/manual" class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3 entry-form" data-entry-form>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Existing Client
+                <select name="client_id" data-client-select class="field">
+                    <option value="">Select client</option>
+                    {% for client in clients %}
+                        <option value="{{ client.id }}" {% if form_defaults.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                New Client
+                <input type="text" name="new_client_name" placeholder="Create client if missing" class="field">
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Existing Project
+                <select name="project_id" data-project-select class="field">
+                    <option value="">Select project</option>
+                    {% for project in projects %}
+                        <option value="{{ project.id }}" data-client-id="{{ project.client_id }}" {% if form_defaults.project_id == project.id %}selected{% endif %}>{{ project.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                New Project
+                <input type="text" name="new_project_name" placeholder="Create project if missing" class="field">
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Existing Task
+                <select name="task_id" data-task-select class="field">
+                    <option value="">Select task</option>
+                    {% for task in tasks %}
+                        <option value="{{ task.id }}" data-project-id="{{ task.project_id }}" {% if form_defaults.task_id == task.id %}selected{% endif %}>{{ task.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                New Task
+                <input type="text" name="new_task_name" placeholder="Create task if missing" class="field">
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Start Time
+                <input type="datetime-local" step="1" name="start_time" value="{{ form_defaults.start_time }}" required class="field">
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                End Time
+                <input type="datetime-local" step="1" name="end_time" value="{{ form_defaults.end_time }}" required class="field">
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 md:col-span-2 xl:col-span-3">
+                Notes
+                <textarea name="notes" rows="3" placeholder="Optional notes" class="field"></textarea>
+            </label>
+            <div class="flex justify-end md:col-span-2 xl:col-span-3">
+                <button type="submit" class="btn">Create Entry</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

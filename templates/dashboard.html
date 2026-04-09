@@ -92,65 +92,14 @@
     </article>
 </section>
 
-<section class="mb-6 panel">
-    <div class="mb-6 flex items-center justify-between gap-3">
+<section class="mb-6 panel-compact">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
             <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Quick start</p>
             <h2 class="mt-2 text-xl font-semibold tracking-tight">Start New Timer</h2>
         </div>
+        <button type="button" class="btn" data-open-modal="start-timer-modal" {% if active_entry %}disabled{% endif %}>Open Quick Start</button>
     </div>
-    <form method="post" action="/entries/start" class="grid gap-4 md:grid-cols-2 xl:grid-cols-6 entry-form" data-entry-form>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-            Existing Client
-            <select name="client_id" data-client-select class="field">
-                <option value="">Select client</option>
-                {% for client in clients %}
-                    <option value="{{ client.id }}">{{ client.name }}</option>
-                {% endfor %}
-            </select>
-        </label>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-            New Client
-            <input type="text" name="new_client_name" placeholder="Create client if missing" class="field">
-        </label>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-            Existing Project
-            <select name="project_id" data-project-select class="field">
-                <option value="">Select project</option>
-                {% for project in projects %}
-                    <option value="{{ project.id }}" data-client-id="{{ project.client_id }}">{{ project.name }}</option>
-                {% endfor %}
-            </select>
-        </label>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-            New Project
-            <input type="text" name="new_project_name" placeholder="Create project if missing" class="field">
-        </label>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-            Existing Task
-            <select name="task_id" data-task-select class="field">
-                <option value="">Select task</option>
-                {% for task in tasks %}
-                    <option value="{{ task.id }}" data-project-id="{{ task.project_id }}">{{ task.name }}</option>
-                {% endfor %}
-            </select>
-        </label>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-            New Task
-            <input type="text" name="new_task_name" placeholder="Create task if missing" class="field">
-        </label>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-            Start Time
-            <input type="datetime-local" step="1" name="start_time" value="{{ form_defaults.start_time }}" class="field">
-        </label>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 md:col-span-2 xl:col-span-6">
-            Notes
-            <textarea name="notes" rows="3" placeholder="Optional notes" class="field"></textarea>
-        </label>
-        <div class="md:col-span-2 xl:col-span-6">
-            <button type="submit" class="btn" {% if active_entry %}disabled{% endif %}>Start Timer</button>
-        </div>
-    </form>
 </section>
 
 <section class="panel">
@@ -235,4 +184,69 @@
     </table>
     </div>
 </section>
+{% endblock %}
+{% block page_modals %}
+<div id="start-timer-modal" class="modal-shell" data-modal data-open="false">
+    <div class="modal-card">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Quick start</p>
+                <h2 class="mt-2 text-xl font-semibold tracking-tight">Start New Timer</h2>
+            </div>
+            <button type="button" class="btn-secondary" data-close-modal>Close</button>
+        </div>
+        <form method="post" action="/entries/start" class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3 entry-form" data-entry-form>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Existing Client
+                <select name="client_id" data-client-select class="field">
+                    <option value="">Select client</option>
+                    {% for client in clients %}
+                        <option value="{{ client.id }}">{{ client.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                New Client
+                <input type="text" name="new_client_name" placeholder="Create client if missing" class="field">
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Existing Project
+                <select name="project_id" data-project-select class="field">
+                    <option value="">Select project</option>
+                    {% for project in projects %}
+                        <option value="{{ project.id }}" data-client-id="{{ project.client_id }}">{{ project.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                New Project
+                <input type="text" name="new_project_name" placeholder="Create project if missing" class="field">
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Existing Task
+                <select name="task_id" data-task-select class="field">
+                    <option value="">Select task</option>
+                    {% for task in tasks %}
+                        <option value="{{ task.id }}" data-project-id="{{ task.project_id }}">{{ task.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                New Task
+                <input type="text" name="new_task_name" placeholder="Create task if missing" class="field">
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Start Time
+                <input type="datetime-local" step="1" name="start_time" value="{{ form_defaults.start_time }}" class="field">
+            </label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 md:col-span-2 xl:col-span-3">
+                Notes
+                <textarea name="notes" rows="3" placeholder="Optional notes" class="field"></textarea>
+            </label>
+            <div class="flex justify-end md:col-span-2 xl:col-span-3">
+                <button type="submit" class="btn" {% if active_entry %}disabled{% endif %}>Start Timer</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
